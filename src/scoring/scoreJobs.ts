@@ -2,8 +2,10 @@ import { supabase } from '../db/supabase.js';
 import { callLlm } from './llm.js';
 
 const RELEVANCE_THRESHOLD = 75;
-const BATCH_SIZE = 10;
 const MAX_ATTEMPTS = 4;
+
+// Set TEST_LIMIT env var to cap LLM calls per run (e.g. TEST_LIMIT=3 for safe local testing)
+const BATCH_SIZE = process.env['TEST_LIMIT'] ? parseInt(process.env['TEST_LIMIT'], 10) : 10;
 
 function backoffMinutes(attempt: number): number {
   const schedule = [15, 60, 360]; // 15min, 1h, 6h

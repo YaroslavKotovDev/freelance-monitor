@@ -19,6 +19,7 @@ function decodeHtmlEntities(text: string): string {
 }
 
 export interface TelegramMessage {
+  jobId: string;
   title: string;
   budget: string | null;
   source: string;
@@ -61,7 +62,7 @@ export async function sendTelegramMessage(msg: TelegramMessage): Promise<Telegra
     reply_markup: {
       inline_keyboard: [[
         { text: '✅ Взяти', url: msg.link },
-        { text: '🙈 Сховати', callback_data: 'hide' },
+        { text: '🙈 Сховати', callback_data: `hide:${msg.jobId}` },
       ]],
     },
   };

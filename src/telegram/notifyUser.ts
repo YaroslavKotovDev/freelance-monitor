@@ -30,6 +30,7 @@ export async function notifyUser(): Promise<{ sent: number; failed: number }> {
       const aiScore = job.ai_score as AiScore | null;
 
       const result = await sendTelegramMessage({
+        jobId: job.id as string,
         title: job.title as string,
         budget: (job.budget_text as string | null) ?? null,
         source: job.source as string,
