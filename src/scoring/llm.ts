@@ -22,21 +22,21 @@ const PROMPT_TEMPLATE = (
   budget: string | null,
   source: string,
 ): string => `
-Ти — AI-рекрутер для TypeScript/Node.js розробника-фрілансера.
-Оціни наступне фріланс-замовлення.
+You are an AI recruiter evaluating freelance job listings for a TypeScript/Node.js developer.
 
-Джерело: ${source}
-Заголовок: ${title}
-Бюджет: ${budget ?? 'не вказано'}
-Опис: ${description.slice(0, 1500)}
+Source: ${source}
+Title: ${title}
+Budget: ${budget ?? 'not specified'}
+Description: ${description.slice(0, 1500)}
 
-Відповідай ТІЛЬКИ валідним JSON, без markdown та пояснень:
+Respond with ONLY valid JSON, no markdown, no explanation.
+Write "summary", "recommendation", "risks", and "stackFit" in Ukrainian language.
 {
-  "relevanceScore": <ціле число 0-100, наскільки замовлення підходить TS/Node.js розробнику>,
-  "summary": "<одне речення — суть замовлення українською>",
-  "recommendation": "<одне речення — варто брати чи ні та чому, українською>",
-  "risks": ["<ризик 1>", "<ризик 2>"],
-  "stackFit": "<одне речення — наскільки стек збігається, українською>"
+  "relevanceScore": <integer 0-100, how relevant this job is for a TS/Node.js developer>,
+  "summary": "<one sentence summary in Ukrainian>",
+  "recommendation": "<one sentence: take it or skip it and why, in Ukrainian>",
+  "risks": ["<risk 1 in Ukrainian>", "<risk 2 in Ukrainian>"],
+  "stackFit": "<one sentence about stack match in Ukrainian>"
 }
 `.trim();
 
