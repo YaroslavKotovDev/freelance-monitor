@@ -1,7 +1,7 @@
 import { supabase } from '../db/supabase.js';
 import { callLlm } from './llm.js';
 
-const RELEVANCE_THRESHOLD = 85;
+const RELEVANCE_THRESHOLD = 75;
 const BATCH_SIZE = 10;
 const MAX_ATTEMPTS = 4;
 

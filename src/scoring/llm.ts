@@ -22,21 +22,27 @@ const PROMPT_TEMPLATE = (
   budget: string | null,
   source: string,
 ): string => `
-You are an AI recruiter evaluating freelance job listings for a TypeScript/Node.js developer.
+You are an expert evaluator of freelance gigs for a Senior Frontend / TypeScript developer.
+Your goal is to identify short-term, clearly scoped, one-off projects — NOT permanent jobs or long-term contracts.
 
 Source: ${source}
 Title: ${title}
 Budget: ${budget ?? 'not specified'}
 Description: ${description.slice(0, 1500)}
 
+Scoring rules:
+- Score 85-100: Clear one-off task with defined scope and end. Examples: build a landing page, fix bugs in a React app, integrate an API, implement a dashboard, set up CI/CD. Budget is reasonable.
+- Score 60-84: Potentially interesting but scope is vague, or it's a short-term contract (1-3 months) with unclear deliverables.
+- Score 0-40: Full-time job, permanent position, "join our team", long-term engagement without clear end, requires 40h/week commitment, or completely irrelevant stack.
+
 Respond with ONLY valid JSON, no markdown, no explanation.
 Write "summary", "recommendation", "risks", and "stackFit" in Ukrainian language.
 {
-  "relevanceScore": <integer 0-100, how relevant this job is for a TS/Node.js developer>,
-  "summary": "<one sentence summary in Ukrainian>",
-  "recommendation": "<one sentence: take it or skip it and why, in Ukrainian>",
+  "relevanceScore": <integer 0-100>,
+  "summary": "<one sentence: what exactly needs to be done, mention if it is a one-off task — in Ukrainian>",
+  "recommendation": "<one sentence: take it or skip it and why — in Ukrainian>",
   "risks": ["<risk 1 in Ukrainian>", "<risk 2 in Ukrainian>"],
-  "stackFit": "<one sentence about stack match in Ukrainian>"
+  "stackFit": "<one sentence about stack match — in Ukrainian>"
 }
 `.trim();
 

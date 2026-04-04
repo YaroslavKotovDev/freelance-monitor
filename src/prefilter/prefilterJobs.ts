@@ -8,12 +8,15 @@ function isRejected(title: string, description: string): boolean {
   return STOP_WORDS.some((word) => text.includes(word.toLowerCase()));
 }
 
-function isTodayOrNewer(isoDate: string | null): boolean {
+const MAX_AGE_DAYS = 30;
+
+function isRecentEnough(isoDate: string | null): boolean {
   if (!isoDate) return true; // no date = don't filter out
   const pubDate = new Date(isoDate);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return pubDate >= today;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - MAX_AGE_DAYS);
+  cutoff.setHours(0, 0, 0, 0);
+  return pubDate >= cutoff;
 }
 
 export async function prefilterJobs(): Promise<{ passed: number; rejected: number }> {
@@ -51,8 +54,8 @@ async function processJobs(
 
   for (const job of jobs) {
     try {
-      // Filter out jobs not from today
-      if (!isTodayOrNewer(job.source_published_at)) {
+      // Filter out jobs older than MAX_AGE_DAYS
+      if (!isRecentEnough(job.source_published_at)) {
         const { error } = await supabase
           .from('jobs')
           .update({ status: 'prefilter_rejected' })

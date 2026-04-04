@@ -8,12 +8,19 @@ interface RssSource {
 
 const RSS_SOURCES: readonly RssSource[] = [
   {
-    url: 'https://weworkremotely.com/categories/remote-front-end-programming-jobs.rss',
-    source: 'weworkremotely',
+    // Freelancer.com — JavaScript category (id=3)
+    url: 'https://www.freelancer.com/rss.xml?jobs=3',
+    source: 'freelancer-js',
   },
   {
-    url: 'https://remoteok.com/remote-typescript-jobs.rss',
-    source: 'remoteok',
+    // Freelancer.com — HTML/CSS category (id=9)
+    url: 'https://www.freelancer.com/rss.xml?jobs=9',
+    source: 'freelancer-html',
+  },
+  {
+    // Freelancer.com — React.js category (id=759)
+    url: 'https://www.freelancer.com/rss.xml?jobs=759',
+    source: 'freelancer-react',
   },
 ];
 
