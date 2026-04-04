@@ -3,3 +3,10 @@ node_modules/
 dist/
 .claude/
 docs/
+
+.vercel
+
+# Admin panel
+admin/node_modules/
+admin/.env
+public/admin/

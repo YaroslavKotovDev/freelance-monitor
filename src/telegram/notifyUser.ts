@@ -1,10 +1,16 @@
 import { supabase } from '../db/supabase.js';
+import { getSettings } from '../db/settings.js';
 import { sendTelegramMessage } from './telegramApi.js';
 import type { AiScore } from '../types.js';
 
 const MAX_PER_RUN = 5;
 
 export async function notifyUser(): Promise<{ sent: number; failed: number }> {
+  const chatId = getSettings().telegram_chat_id;
+  if (!chatId) {
+    console.warn('[telegram] telegram_chat_id not set — send /start to the bot to connect');
+    return { sent: 0, failed: 0 };
+  }
   const { data: jobs, error } = await supabase
     .from('jobs')
     .select('id, title, budget_text, external_id, source, ai_score')
@@ -39,7 +45,7 @@ export async function notifyUser(): Promise<{ sent: number; failed: number }> {
         risks: aiScore?.risks ?? [],
         stackFit: aiScore?.stackFit ?? '—',
         link: job.external_id as string,
-      });
+      }, String(chatId));
 
       await supabase
         .from('jobs')

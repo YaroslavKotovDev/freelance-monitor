@@ -1,11 +1,11 @@
 import { supabase } from '../db/supabase.js';
-import { STOP_WORDS } from './stopWords.js';
+import { getSettings } from '../db/settings.js';
 
 const BATCH_SIZE = 50;
 
 function isRejected(title: string, description: string): boolean {
   const text = `${title} ${description}`.toLowerCase();
-  return STOP_WORDS.some((word) => text.includes(word.toLowerCase()));
+  return getSettings().stop_words.some((word) => text.includes(word.toLowerCase()));
 }
 
 const MAX_AGE_DAYS = 30;

@@ -239,13 +239,16 @@ async function fetchFeed(rssSource: RssSource): Promise<JobInput[]> {
   }
 }
 
-export async function fetchRssJobs(): Promise<JobInput[]> {
-  const results = await Promise.allSettled(RSS_SOURCES.map(fetchFeed));
+export async function fetchRssJobs(activeSources?: string[]): Promise<JobInput[]> {
+  const sources = activeSources
+    ? RSS_SOURCES.filter((s) => activeSources.includes(s.source))
+    : RSS_SOURCES;
+  const results = await Promise.allSettled(sources.map(fetchFeed));
   const jobs: JobInput[] = [];
 
   for (let i = 0; i < results.length; i++) {
     const result = results[i];
-    const src = RSS_SOURCES[i];
+    const src = sources[i];
     if (result === undefined || src === undefined) continue;
 
     if (result.status === 'fulfilled') {

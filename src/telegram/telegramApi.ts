@@ -35,9 +35,8 @@ export interface TelegramSendResult {
   chatId: string;
 }
 
-export async function sendTelegramMessage(msg: TelegramMessage): Promise<TelegramSendResult> {
+export async function sendTelegramMessage(msg: TelegramMessage, chatId: string): Promise<TelegramSendResult> {
   const token = getRequiredEnv('TELEGRAM_BOT_TOKEN');
-  const chatId = getRequiredEnv('TELEGRAM_CHAT_ID');
 
   const title = decodeHtmlEntities(msg.title);
   const risksText = msg.risks.length > 0
@@ -81,6 +80,6 @@ export async function sendTelegramMessage(msg: TelegramMessage): Promise<Telegra
   const result = await response.json() as { result: { message_id: number } };
   return {
     messageId: String(result.result.message_id),
-    chatId,
+    chatId: String(chatId),
   };
 }

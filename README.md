@@ -1,54 +1,128 @@
 # Freelance Monitor
 
-AI-powered pipeline that monitors remote job boards, filters noise, scores listings with LLM, and delivers top opportunities to Telegram.
+AI-моніторинг фріланс-вакансій. Парсить RSS-стрічки, фільтрує стоп-словами, скорить через LLM і надсилає релевантні гіги у Telegram. Керується через веб-адмінку без змін у коді.
 
 ---
 
-## How It Works
+## Як це працює
 
 ```
 RSS Feeds → Pre-filter → AI Scoring → Telegram
+                ↑
+        Налаштування з БД
+        (стоп-слова, поріг, джерела)
 ```
 
-1. **Ingestion** — fetches jobs from multiple RSS sources on a cron schedule
-2. **Pre-filter** — instantly rejects irrelevant listings via stop-word rules (no LLM cost)
-3. **AI Scoring** — sends qualified jobs to GPT, returns relevance score + Ukrainian-language summary
-4. **Delivery** — pushes top-scored jobs to Telegram with inline action buttons
+1. **Settings** — пайплайн зчитує налаштування з Supabase. Якщо бот вимкнений — завершується одразу.
+2. **Ingestion** — парсить активні RSS-джерела (Freelancer.com, Reddit r/forhire)
+3. **Pre-filter** — відхиляє нерелевантні вакансії стоп-словами (без LLM-витрат)
+4. **AI Scoring** — скорить через GPT, повертає структурований JSON українською
+5. **Delivery** — надсилає у Telegram з кнопками "Взяти" / "Сховати"
 
 ---
 
-## Stack
+## Live
 
-| Layer | Technology |
+| | URL |
+|---|---|
+| Статус-сторінка | `https://freelance-monitor-xi.vercel.app` |
+| Адмін-панель | `https://freelance-monitor-xi.vercel.app/admin/` |
+| Webhook | `https://freelance-monitor-xi.vercel.app/api/webhook` |
+
+---
+
+## Стек
+
+| Шар | Технологія |
 |---|---|
 | Runtime | TypeScript, Node.js 20+, ESModules |
 | Database | Supabase PostgreSQL |
-| Scheduler | GitHub Actions cron |
+| Scheduler | GitHub Actions cron (кожні 30 хв) |
 | AI | OpenAI / OpenRouter |
 | Notifications | Telegram Bot API |
+| Admin UI | React + Vite + Supabase Auth |
+| Hosting | Vercel (webhook + адмінка) |
 
-Zero paid infrastructure. No Redis. No heavy workers.
+Нуль платної інфраструктури. Без Redis. Без важких воркерів.
 
 ---
 
-## Job Status Flow
+## Структура проєкту
+
+```
+src/
+├── index.ts                  # Оркестратор пайплайну
+├── types.ts                  # Спільні інтерфейси
+├── db/
+│   ├── supabase.ts           # DB-клієнт
+│   └── settings.ts           # Завантаження налаштувань з БД (кеш на прогін)
+├── ingestion/
+│   ├── fetchJobs.ts          # Точка входу Stage 2
+│   ├── parseRss.ts           # RSS 2.0 + Atom парсер (без XML-бібліотек)
+│   └── saveJobs.ts           # Вставка з дедупліцею по content_hash
+├── prefilter/
+│   ├── prefilterJobs.ts      # Стоп-слова + фільтр по даті
+│   └── stopWords.ts          # Константа стоп-слів (fallback якщо БД недоступна)
+├── scoring/
+│   ├── scoreJobs.ts          # LLM-скоринг з retry/backoff
+│   └── llm.ts                # OpenAI/OpenRouter хелпер + Zod-валідація
+└── telegram/
+    ├── notifyUser.ts         # Доставка з ідемпотентністю
+    └── telegramApi.ts        # Telegram Bot API хелпер
+
+api/
+└── webhook.ts                # Vercel serverless: /start + кнопка Сховати
+
+admin/                        # Веб-адмінка (React + Vite)
+├── src/
+│   ├── App.tsx               # Auth guard
+│   ├── supabase.ts           # Supabase anon client
+│   └── components/
+│       ├── Login.tsx         # Форма входу (Supabase Auth UI)
+│       └── SettingsPanel.tsx # Керування налаштуваннями
+
+supabase/migrations/
+├── 001_create_jobs.sql       # Базова схема jobs
+├── 002_upgrade_jobs.sql      # Розширена схема (retry, content_hash, indexes)
+├── 003_create_settings.sql   # Таблиця app_settings + RLS
+└── 004_add_telegram_chat_id.sql  # chat_id через /start
+```
+
+---
+
+## Статус пайплайну
 
 ```
 new
- ├── prefilter_rejected     (stop-word match or older than today)
+ ├── prefilter_rejected     (стоп-слово або стара вакансія)
  └── ready_for_llm
-      ├── llm_rejected      (score < 85)
-      ├── llm_failed        (max retries exceeded)
+      ├── llm_rejected      (score < min_score з БД)
+      ├── llm_failed        (вичерпано спроби)
       └── publish_ready
-           ├── published    (sent to Telegram ✅)
-           └── publish_failed
+           ├── published        (надіслано в Telegram ✅)
+           ├── publish_failed
+           └── hidden_by_user   (юзер натиснув Сховати)
 ```
+
+---
+
+## Налаштування (app_settings)
+
+Керуються через адмін-панель — без змін у коді.
+
+| Поле | Тип | Опис |
+|---|---|---|
+| `is_bot_active` | boolean | Головний рубильник. `false` → пайплайн завершується одразу |
+| `stop_words` | string[] | Вакансії з цими словами відхиляються на pre-filter |
+| `min_score` | int | Мінімальний бал AI (0–100). За замовчуванням `75` |
+| `active_sources` | string[] | Які RSS-джерела парсити |
+| `telegram_chat_id` | bigint | Встановлюється автоматично через `/start` |
 
 ---
 
 ## AI Output
 
-Each job scored by LLM returns structured JSON validated with Zod:
+Кожна вакансія повертає структурований JSON (валідується Zod):
 
 ```json
 {
@@ -60,53 +134,39 @@ Each job scored by LLM returns structured JSON validated with Zod:
 }
 ```
 
-Threshold: `relevanceScore >= 85` → delivered to Telegram.
-
 ---
 
 ## Retry Policy
 
-| Attempt | Delay |
+| Спроба | Затримка |
 |---|---|
-| 1st failure | 15 minutes |
-| 2nd failure | 1 hour |
-| 3rd failure | 6 hours |
-| 4th failure | `llm_failed` (terminal) |
+| 1-а помилка | 15 хвилин |
+| 2-а помилка | 1 година |
+| 3-я помилка | 6 годин |
+| 4-а помилка | `llm_failed` (термінально) |
 
 ---
 
-## Project Structure
+## Telegram-повідомлення
 
 ```
-src/
-├── index.ts                  # Pipeline orchestrator
-├── types.ts                  # Shared interfaces
-├── db/
-│   └── supabase.ts           # DB client
-├── ingestion/
-│   ├── fetchJobs.ts          # Stage entry point
-│   ├── parseRss.ts           # Multi-source RSS fetch + content_hash
-│   └── saveJobs.ts           # Insert with dedup
-├── prefilter/
-│   ├── prefilterJobs.ts      # Stop-word filter + today-only logic
-│   └── stopWords.ts          # Stop-word list
-├── scoring/
-│   ├── scoreJobs.ts          # LLM scoring with retry/backoff
-│   └── llm.ts                # LLM API helper + Zod validation
-└── telegram/
-    ├── notifyUser.ts         # Delivery with idempotency
-    └── telegramApi.ts        # Telegram Bot API helper
-supabase/
-└── migrations/
-    ├── 001_create_jobs.sql   # Base schema
-    └── 002_upgrade_jobs.sql  # Extended schema (retry, content_hash, indexes)
+*Senior TypeScript Engineer — Remote*
+
+💰 Бюджет: $3000
+🌐 Джерело: freelancer-react
+📋 Суть: Розробка Node.js бекенду для фінтех-стартапу
+🔧 Стек: Повний збіг — TS, Node.js, PostgreSQL
+💡 Висновок: Варто взяти — сильний стек та адекватний бюджет
+⚠️ Ризики: Немає ТЗ, стартап без трекшену
+
+[ ✅ Взяти ]  [ 🙈 Сховати ]
 ```
 
 ---
 
-## Setup
+## Setup з нуля
 
-### 1. Clone & install
+### 1. Клон та встановлення
 
 ```bash
 git clone https://github.com/YaroslavKotovDev/freelance-monitor.git
@@ -116,84 +176,107 @@ npm install
 
 ### 2. Supabase
 
-1. Create a project at [supabase.com](https://supabase.com)
-2. Open **SQL Editor** and run both migration files in order:
-   - `supabase/migrations/001_create_jobs.sql`
-   - `supabase/migrations/002_upgrade_jobs.sql`
+1. Створи проєкт на [supabase.com](https://supabase.com)
+2. Відкрий **SQL Editor** → виконай міграції по порядку:
+   ```
+   001_create_jobs.sql
+   002_upgrade_jobs.sql
+   003_create_settings.sql
+   004_add_telegram_chat_id.sql
+   ```
+3. В `003_create_settings.sql` вже є дефолтний рядок. Після застосування зайди в адмінку і встанови `is_bot_active = true`.
 
-### 3. Environment
+### 3. Змінні середовища
 
 ```bash
 cp .env.example .env
 ```
 
-| Variable | Required | Description |
-|---|---|---|
-| `SUPABASE_URL` | ✅ | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Supabase service role key |
-| `LLM_PROVIDER` | ✅ | `openai` or `openrouter` |
-| `LLM_API_KEY` | ✅ | API key for LLM provider |
-| `LLM_MODEL` | ✅ | Model name (e.g. `gpt-4.1-mini`) |
-| `TELEGRAM_BOT_TOKEN` | ✅ | Bot token from @BotFather |
-| `TELEGRAM_CHAT_ID` | ✅ | Your Telegram user/chat ID |
+| Змінна | Де взяти |
+|---|---|
+| `SUPABASE_URL` | Supabase → Settings → API → Project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → service_role |
+| `LLM_PROVIDER` | `openai` або `openrouter` |
+| `LLM_API_KEY` | Ключ від LLM-провайдера |
+| `LLM_MODEL` | Наприклад `gpt-4.1-mini` |
+| `TELEGRAM_BOT_TOKEN` | @BotFather |
 
-### 4. Run locally
+> `TELEGRAM_CHAT_ID` більше не потрібен — встановлюється автоматично через `/start`.
+
+### 4. Локальний запуск
 
 ```bash
 npx tsx --env-file=.env src/index.ts
 ```
 
----
+Тест без повного LLM-прогону (ліміт 3 вакансії):
 
-## GitHub Actions
-
-Add all `.env` values as **GitHub Secrets**, then create `.github/workflows/monitor.yml`:
-
-```yaml
-name: Freelance Monitor
-
-on:
-  schedule:
-    - cron: '*/30 * * * *'
-  workflow_dispatch:
-
-concurrency:
-  group: freelance-monitor
-  cancel-in-progress: false
-
-jobs:
-  run:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - run: npm ci
-      - run: npx tsx src/index.ts
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          LLM_PROVIDER: ${{ secrets.LLM_PROVIDER }}
-          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
-          LLM_MODEL: ${{ secrets.LLM_MODEL }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+```bash
+TEST_LIMIT=3 npx tsx --env-file=.env src/index.ts
 ```
 
 ---
 
-## Telegram Message Format
+## Vercel (webhook + адмінка)
+
+### Env vars у Vercel Dashboard
+
+| Змінна | Для чого |
+|---|---|
+| `SUPABASE_URL` | Webhook (кнопка Сховати, /start) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Webhook |
+| `TELEGRAM_BOT_TOKEN` | Webhook |
+| `VITE_SUPABASE_URL` | Білд адмінки (те саме значення що SUPABASE_URL) |
+| `VITE_SUPABASE_ANON_KEY` | Білд адмінки (anon public, не service_role!) |
+
+### Deploy
+
+```bash
+npx vercel deploy --prod --yes
+```
+
+### Реєстрація Telegram webhook
+
+```bash
+curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://freelance-monitor-xi.vercel.app/api/webhook"
+```
+
+---
+
+## GitHub Actions (cron)
+
+Додай у **GitHub Secrets** репозиторію:
 
 ```
-*Senior TypeScript Engineer — Remote*
-
-💰 Бюджет: $3000
-🌐 Джерело: weworkremotely
-📋 Суть: Розробка Node.js бекенду для фінтех-стартапу
-🔧 Стек: Повний збіг — TS, Node.js, PostgreSQL
-💡 Висновок: Варто взяти — сильний стек та адекватний бюджет
-⚠️ Ризики: Немає ТЗ, стартап без трекшену
-
-[ ✅ Взяти ]  [ 🙈 Сховати ]
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+LLM_PROVIDER
+LLM_API_KEY
+LLM_MODEL
+TELEGRAM_BOT_TOKEN
 ```
+
+Cron вже налаштований у `.github/workflows/monitor.yml` — запускається кожні 30 хвилин.
+
+---
+
+## Підключення Telegram
+
+1. Знайди свого бота в Telegram
+2. Напиши `/start`
+3. Бот відповість `✅ Підключено!` і збереже `chat_id` в БД
+4. В адмін-панелі `/admin/` з'явиться статус підключення
+
+---
+
+## Адмін-панель
+
+`https://freelance-monitor-xi.vercel.app/admin/`
+
+Захищена Supabase Auth. Створи користувача: Supabase Dashboard → Authentication → Users → Add user.
+
+Що можна налаштувати без змін у коді:
+- Увімкнути / вимкнути бота
+- Обрати активні джерела
+- Змінити поріг AI-скорингу
+- Редагувати список стоп-слів

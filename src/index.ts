@@ -1,3 +1,4 @@
+import { loadSettings } from './db/settings.js';
 import { fetchJobs } from './ingestion/fetchJobs.js';
 import { prefilterJobs } from './prefilter/prefilterJobs.js';
 import { scoreJobs } from './scoring/scoreJobs.js';
@@ -5,6 +6,15 @@ import { notifyUser } from './telegram/notifyUser.js';
 
 async function main(): Promise<void> {
   console.log('[pipeline] Starting freelance-monitor run...');
+
+  console.log('[pipeline] Stage 1: Loading settings');
+  const settings = await loadSettings();
+  console.log(`[pipeline] Settings: is_bot_active=${settings.is_bot_active}, min_score=${settings.min_score}, sources=[${settings.active_sources.join(', ')}]`);
+
+  if (!settings.is_bot_active) {
+    console.log('[pipeline] Bot is disabled in settings. Exiting...');
+    process.exit(0);
+  }
 
   console.log('[pipeline] Stage 2: Ingestion');
   await fetchJobs();

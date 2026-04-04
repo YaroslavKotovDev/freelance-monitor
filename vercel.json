@@ -1,4 +1,6 @@
 {
+  "buildCommand": "npm install --prefix admin && npm run build --prefix admin",
+  "outputDirectory": "public",
   "functions": {
     "api/webhook.ts": {
       "memory": 128,

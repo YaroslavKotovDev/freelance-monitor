@@ -7,19 +7,29 @@ function getEnv(name: string): string {
   return value;
 }
 
+interface TelegramMessage {
+  message_id: number;
+  chat: { id: number };
+  text?: string;
+}
+
 interface CallbackQuery {
   id: string;
-  message?: {
-    chat: { id: number };
-    message_id: number;
-    text?: string;
-    reply_markup?: unknown;
-  };
+  message?: TelegramMessage;
   data?: string;
 }
 
 interface TelegramUpdate {
+  message?: TelegramMessage;
   callback_query?: CallbackQuery;
+}
+
+async function sendMessage(token: string, chatId: number, text: string): Promise<void> {
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text }),
+  });
 }
 
 async function answerCallbackQuery(token: string, callbackQueryId: string, text: string): Promise<void> {
@@ -59,6 +69,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   });
 
   const update = req.body as TelegramUpdate;
+
+  // ─── /start command — register chat_id ──────────────────────────────────────
+  if (update.message?.text?.startsWith('/start')) {
+    const chatId = update.message.chat.id;
+
+    await supabase
+      .from('app_settings')
+      .update({ telegram_chat_id: chatId })
+      .eq('id', 1);
+
+    await sendMessage(
+      token,
+      chatId,
+      '✅ Підключено! Тепер ти будеш отримувати сповіщення про нові вакансії.',
+    );
+
+    res.status(200).json({ ok: true });
+    return;
+  }
+
+  // ─── Inline button callback ──────────────────────────────────────────────────
   const cb = update.callback_query;
 
   if (!cb?.data || !cb.message) {
@@ -86,12 +117,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
     await Promise.all([
       answerCallbackQuery(token, cb.id, '🙈 Сховано'),
-      editMessageReplyMarkup(
-        token,
-        cb.message.chat.id,
-        cb.message.message_id,
-        '🙈 Сховано',
-      ),
+      editMessageReplyMarkup(token, cb.message.chat.id, cb.message.message_id, '🙈 Сховано'),
     ]);
 
     res.status(200).json({ ok: true });
