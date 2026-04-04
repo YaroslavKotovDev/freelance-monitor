@@ -8,9 +8,10 @@ A lightweight freelance job monitoring system. It fetches job listings from RSS 
 
 - **Runtime**: TypeScript, Node.js ≥20, ESModules (`"type": "module"`)
 - **Database**: Supabase PostgreSQL (state store)
-- **Scheduling**: GitHub Actions cron (not yet configured)
+- **Scheduling**: GitHub Actions cron (every 30 minutes)
 - **Notifications**: Telegram Bot API
 - **LLM**: Configurable via env (OpenAI or OpenRouter)
+- **Validation**: Zod for LLM response schema
 - **No**: axios, Redis, n8n, heavy workers, microservices
 
 ## Project structure
@@ -18,33 +19,36 @@ A lightweight freelance job monitoring system. It fetches job listings from RSS 
 ```
 src/
   index.ts                    # Stage 6: main() orchestrator
-  types.ts                    # Shared Job interface
+  types.ts                    # Shared JobInput and AiScore interfaces
   db/
     supabase.ts               # Supabase client init
   ingestion/
     fetchJobs.ts              # Stage 2 entry point
-    parseRss.ts               # RSS fetch + XML parse (no heavy libs)
+    parseRss.ts               # RSS fetch + XML parse + content_hash (no heavy libs)
     saveJobs.ts               # Insert with dedup (unique constraint 23505)
   prefilter/
-    prefilterJobs.ts          # Stage 3: stop-word filter
-    stopWords.ts              # Stop-word list constant
+    prefilterJobs.ts          # Stage 3: stop-word filter + today-only logic
+    stopWords.ts              # Stop-word list constant (Ukrainian + English)
   scoring/
-    scoreJobs.ts              # Stage 4: LLM scoring
-    llm.ts                    # LLM API helper (OpenAI/OpenRouter)
+    scoreJobs.ts              # Stage 4: LLM scoring with retry/backoff
+    llm.ts                    # LLM API helper (OpenAI/OpenRouter) + Zod validation
   telegram/
-    notifyUser.ts             # Stage 5: send to Telegram
-    telegramApi.ts            # Telegram Bot API helper
+    notifyUser.ts             # Stage 5: send to Telegram with idempotency
+    telegramApi.ts            # Telegram Bot API helper, returns message_id
 supabase/
   migrations/
-    001_create_jobs.sql       # jobs table DDL
+    001_create_jobs.sql       # Base jobs table DDL
+    002_upgrade_jobs.sql      # Extended schema: retry fields, content_hash, indexes
 ```
 
 ## Job status flow
 
 ```
-new → prefilter_rejected
+new → prefilter_rejected         (stop-word or not from today)
 new → ready_for_llm → llm_rejected
+new → ready_for_llm → llm_failed (max retries)
 new → ready_for_llm → publish_ready → published
+new → ready_for_llm → publish_ready → publish_failed
 ```
 
 ## Environment variables
@@ -55,7 +59,7 @@ new → ready_for_llm → publish_ready → published
 | `SUPABASE_SERVICE_ROLE_KEY` | ✅      | Supabase service role key            |
 | `LLM_PROVIDER`            | ✅        | `openai` or `openrouter`             |
 | `LLM_API_KEY`             | ✅        | API key for LLM provider             |
-| `LLM_MODEL`               | ✅        | Model name (e.g. `gpt-4o-mini`)      |
+| `LLM_MODEL`               | ✅        | Model name (e.g. `gpt-4.1-mini`)     |
 | `TELEGRAM_BOT_TOKEN`      | ✅        | Bot token from @BotFather            |
 | `TELEGRAM_CHAT_ID`        | ✅        | Your Telegram chat/user ID           |
 
@@ -75,4 +79,7 @@ npx tsx --env-file=.env src/index.ts
 - One bad record must never crash the whole batch — always wrap loops in try/catch
 - Don't add dependencies without clear need
 - Stop-words live in `src/prefilter/stopWords.ts`
-- LLM relevance threshold is `75` in `src/scoring/scoreJobs.ts`
+- LLM relevance threshold is `85` in `src/scoring/scoreJobs.ts`
+- UI labels in Telegram messages must be in Ukrainian
+- LLM prompt must request Ukrainian-language output
+- `docs/` is gitignored — internal notes only

@@ -40,17 +40,17 @@ export async function sendTelegramMessage(msg: TelegramMessage): Promise<Telegra
 
   const title = decodeHtmlEntities(msg.title);
   const risksText = msg.risks.length > 0
-    ? `⚠️ *Риски:* ${escapeMarkdownV2(msg.risks.join(', '))}`
+    ? `⚠️ *Ризики:* ${escapeMarkdownV2(msg.risks.join(', '))}`
     : null;
 
   const lines = [
     `*${escapeMarkdownV2(title)}*`,
     ``,
-    `💰 *Бюджет:* ${escapeMarkdownV2(msg.budget ?? 'не указан')}`,
-    `🌐 *Источник:* ${escapeMarkdownV2(msg.source)}`,
+    `💰 *Бюджет:* ${escapeMarkdownV2(msg.budget ?? 'не вказано')}`,
+    `🌐 *Джерело:* ${escapeMarkdownV2(msg.source)}`,
     `📋 *Суть:* ${escapeMarkdownV2(msg.summary)}`,
     `🔧 *Стек:* ${escapeMarkdownV2(msg.stackFit)}`,
-    `💡 *Вывод:* ${escapeMarkdownV2(msg.recommendation)}`,
+    `💡 *Висновок:* ${escapeMarkdownV2(msg.recommendation)}`,
     ...(risksText ? [risksText] : []),
   ];
 
@@ -60,8 +60,8 @@ export async function sendTelegramMessage(msg: TelegramMessage): Promise<Telegra
     parse_mode: 'MarkdownV2',
     reply_markup: {
       inline_keyboard: [[
-        { text: '✅ Взять', url: msg.link },
-        { text: '🙈 Скрыть', callback_data: 'hide' },
+        { text: '✅ Взяти', url: msg.link },
+        { text: '🙈 Сховати', callback_data: 'hide' },
       ]],
     },
   };

@@ -1,6 +1,6 @@
-# 🤖 Freelance Monitor
+# Freelance Monitor
 
-> Personal AI-powered recruiter for freelance job listings. Monitors remote job boards, filters noise, scores opportunities with LLM, and delivers the best leads directly to Telegram.
+AI-powered pipeline that monitors remote job boards, filters noise, scores listings with LLM, and delivers top opportunities to Telegram.
 
 ---
 
@@ -10,10 +10,10 @@
 RSS Feeds → Pre-filter → AI Scoring → Telegram
 ```
 
-1. **Ingestion** — fetches jobs from multiple RSS sources every 30 minutes via GitHub Actions
-2. **Pre-filter** — instantly rejects irrelevant listings using a stop-word rule engine (no LLM cost)
-3. **AI Scoring** — sends qualified jobs to GPT for relevance scoring and Russian-language summary
-4. **Delivery** — sends top-scored jobs to Telegram with inline buttons
+1. **Ingestion** — fetches jobs from multiple RSS sources on a cron schedule
+2. **Pre-filter** — instantly rejects irrelevant listings via stop-word rules (no LLM cost)
+3. **AI Scoring** — sends qualified jobs to GPT, returns relevance score + Ukrainian-language summary
+4. **Delivery** — pushes top-scored jobs to Telegram with inline action buttons
 
 ---
 
@@ -22,54 +22,49 @@ RSS Feeds → Pre-filter → AI Scoring → Telegram
 | Layer | Technology |
 |---|---|
 | Runtime | TypeScript, Node.js 20+, ESModules |
-| Database | Supabase PostgreSQL (free tier) |
+| Database | Supabase PostgreSQL |
 | Scheduler | GitHub Actions cron |
 | AI | OpenAI / OpenRouter |
-| Delivery | Telegram Bot API |
+| Notifications | Telegram Bot API |
 
-No Redis. No heavy workers. No paid infrastructure.
+Zero paid infrastructure. No Redis. No heavy workers.
 
 ---
 
-## Pipeline Details
-
-### Sources
-
-| Source | Feed |
-|---|---|
-| WeWorkRemotely | Frontend Programming Jobs |
-| RemoteOK | TypeScript Jobs |
-
-### Job Status Flow
+## Job Status Flow
 
 ```
 new
- ├── prefilter_rejected     (stop-word match or not from today)
+ ├── prefilter_rejected     (stop-word match or older than today)
  └── ready_for_llm
-      ├── llm_rejected      (AI score < 85)
+      ├── llm_rejected      (score < 85)
       ├── llm_failed        (max retries exceeded)
       └── publish_ready
            ├── published    (sent to Telegram ✅)
-           └── publish_failed (Telegram error, retried)
+           └── publish_failed
 ```
 
-### AI Output
+---
 
-Each job scored by LLM returns:
+## AI Output
+
+Each job scored by LLM returns structured JSON validated with Zod:
 
 ```json
 {
   "relevanceScore": 92,
-  "summary": "Разработка TypeScript API для SaaS-платформы",
-  "recommendation": "Стоит взять — стек совпадает, бюджет адекватный",
-  "risks": ["Нет чёткого ТЗ", "Сжатые сроки"],
-  "stackFit": "Полное совпадение: Node.js, TypeScript, PostgreSQL"
+  "summary": "Розробка TypeScript API для SaaS-платформи",
+  "recommendation": "Варто взяти — стек збігається, бюджет адекватний",
+  "risks": ["Немає чіткого ТЗ", "Стислі терміни"],
+  "stackFit": "Повний збіг: Node.js, TypeScript, PostgreSQL"
 }
 ```
 
-Threshold: `relevanceScore >= 85` → sent to Telegram.
+Threshold: `relevanceScore >= 85` → delivered to Telegram.
 
-### Retry Policy
+---
+
+## Retry Policy
 
 | Attempt | Delay |
 |---|---|
@@ -84,19 +79,19 @@ Threshold: `relevanceScore >= 85` → sent to Telegram.
 
 ```
 src/
-├── index.ts                  # Main orchestrator
+├── index.ts                  # Pipeline orchestrator
 ├── types.ts                  # Shared interfaces
 ├── db/
 │   └── supabase.ts           # DB client
 ├── ingestion/
 │   ├── fetchJobs.ts          # Stage entry point
-│   ├── parseRss.ts           # RSS fetch + XML parse + content_hash
+│   ├── parseRss.ts           # Multi-source RSS fetch + content_hash
 │   └── saveJobs.ts           # Insert with dedup
 ├── prefilter/
 │   ├── prefilterJobs.ts      # Stop-word filter + today-only logic
 │   └── stopWords.ts          # Stop-word list
 ├── scoring/
-│   ├── scoreJobs.ts          # LLM scoring with retry
+│   ├── scoreJobs.ts          # LLM scoring with retry/backoff
 │   └── llm.ts                # LLM API helper + Zod validation
 └── telegram/
     ├── notifyUser.ts         # Delivery with idempotency
@@ -119,32 +114,28 @@ cd freelance-monitor
 npm install
 ```
 
-### 2. Create Supabase project
+### 2. Supabase
 
-1. Go to [supabase.com](https://supabase.com) → create new project
-2. Open **SQL Editor** and run both migration files:
+1. Create a project at [supabase.com](https://supabase.com)
+2. Open **SQL Editor** and run both migration files in order:
    - `supabase/migrations/001_create_jobs.sql`
    - `supabase/migrations/002_upgrade_jobs.sql`
 
-### 3. Configure environment
+### 3. Environment
 
 ```bash
 cp .env.example .env
 ```
 
-Fill in `.env`:
-
-```env
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-
-LLM_PROVIDER=openai              # or openrouter
-LLM_API_KEY=sk-...
-LLM_MODEL=gpt-4.1-mini
-
-TELEGRAM_BOT_TOKEN=your-bot-token
-TELEGRAM_CHAT_ID=your-chat-id
-```
+| Variable | Required | Description |
+|---|---|---|
+| `SUPABASE_URL` | ✅ | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Supabase service role key |
+| `LLM_PROVIDER` | ✅ | `openai` or `openrouter` |
+| `LLM_API_KEY` | ✅ | API key for LLM provider |
+| `LLM_MODEL` | ✅ | Model name (e.g. `gpt-4.1-mini`) |
+| `TELEGRAM_BOT_TOKEN` | ✅ | Bot token from @BotFather |
+| `TELEGRAM_CHAT_ID` | ✅ | Your Telegram user/chat ID |
 
 ### 4. Run locally
 
@@ -154,9 +145,9 @@ npx tsx --env-file=.env src/index.ts
 
 ---
 
-## GitHub Actions (Auto-run)
+## GitHub Actions
 
-Add all `.env` variables as **GitHub Secrets**, then create `.github/workflows/monitor.yml`:
+Add all `.env` values as **GitHub Secrets**, then create `.github/workflows/monitor.yml`:
 
 ```yaml
 name: Freelance Monitor
@@ -198,25 +189,11 @@ jobs:
 *Senior TypeScript Engineer — Remote*
 
 💰 Бюджет: $3000
-🌐 Источник: weworkremotely
-📋 Суть: Разработка Node.js бэкенда для финтех-стартапа
-🔧 Стек: Полное совпадение — TS, Node.js, PostgreSQL
-💡 Вывод: Стоит взять — сильный стек и адекватный бюджет
-⚠️ Риски: Нет ТЗ, стартап без трекшена
+🌐 Джерело: weworkremotely
+📋 Суть: Розробка Node.js бекенду для фінтех-стартапу
+🔧 Стек: Повний збіг — TS, Node.js, PostgreSQL
+💡 Висновок: Варто взяти — сильний стек та адекватний бюджет
+⚠️ Ризики: Немає ТЗ, стартап без трекшену
 
-[ ✅ Взять ]  [ 🙈 Скрыть ]
+[ ✅ Взяти ]  [ 🙈 Сховати ]
 ```
-
----
-
-## Environment Variables
-
-| Variable | Required | Description |
-|---|---|---|
-| `SUPABASE_URL` | ✅ | Supabase project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Supabase service role key |
-| `LLM_PROVIDER` | ✅ | `openai` or `openrouter` |
-| `LLM_API_KEY` | ✅ | API key for LLM provider |
-| `LLM_MODEL` | ✅ | Model name (e.g. `gpt-4.1-mini`) |
-| `TELEGRAM_BOT_TOKEN` | ✅ | Bot token from @BotFather |
-| `TELEGRAM_CHAT_ID` | ✅ | Your Telegram user/chat ID |
