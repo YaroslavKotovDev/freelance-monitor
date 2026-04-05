@@ -11,6 +11,7 @@ interface Settings {
   llm_provider: string | null
   llm_api_key: string | null
   llm_model: string | null
+  developer_profile: string | null
 }
 
 interface Props {
@@ -187,7 +188,7 @@ export default function SettingsPanel({ session }: Props) {
   useEffect(() => {
     supabase
       .from('app_settings')
-      .select('is_bot_active, stop_words, min_score, active_sources, telegram_chat_id, llm_provider, llm_api_key, llm_model')
+      .select('is_bot_active, stop_words, min_score, active_sources, telegram_chat_id, llm_provider, llm_api_key, llm_model, developer_profile')
       .eq('id', 1)
       .single()
       .then(({ data, error }) => {
@@ -234,6 +235,7 @@ export default function SettingsPanel({ session }: Props) {
         llm_provider: settings.llm_provider || null,
         llm_api_key: settings.llm_api_key || null,
         llm_model: settings.llm_model || null,
+        developer_profile: settings.developer_profile || null,
       })
       .eq('id', 1)
 
@@ -402,6 +404,20 @@ export default function SettingsPanel({ session }: Props) {
           OpenAI: <code style={{ color: '#666' }}>gpt-4.1-mini</code> &nbsp;·&nbsp;
           OpenRouter: <code style={{ color: '#666' }}>openai/gpt-4.1-mini</code>
         </div>
+      </div>
+
+      {/* Developer profile for cover letters */}
+      <div style={s.card}>
+        <div style={s.cardTitle}>Профіль розробника</div>
+        <label style={s.label}>Використовується для генерації відгуків на вакансії (кнопка ✍️ Написати відгук)</label>
+        <textarea
+          value={settings.developer_profile ?? ''}
+          onChange={(e) => update('developer_profile', e.target.value || null)}
+          placeholder={`Приклад:\n4+ роки досвіду Full-Stack розробки. Стек: TypeScript, React, Node.js, PostgreSQL.\nПрацюю в FAVBET TECH над high-load маркетинговими платформами (мільярди записей).\nРаніше в SOLUTION MENTORS: створив AI-чатбота (скоротив час відповіді на 97%), прискорив деплой у 3 рази.\nMaster's Degree in Computer Science.`}
+          style={{ ...s.textarea, minHeight: '140px', marginTop: '8px' }}
+          spellCheck={false}
+        />
+        <div style={s.hint}>Чим конкретніше — тим кращий відгук. Вказуй цифри, технології, конкретні результати.</div>
       </div>
 
       {/* Min score */}

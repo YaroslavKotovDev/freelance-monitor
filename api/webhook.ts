@@ -24,6 +24,16 @@ interface TelegramUpdate {
   callback_query?: CallbackQuery;
 }
 
+interface AppSettings {
+  is_bot_active: boolean;
+  llm_provider: string | null;
+  llm_api_key: string | null;
+  llm_model: string | null;
+  developer_profile: string | null;
+}
+
+// ─── Telegram helpers ─────────────────────────────────────────────────────────
+
 async function sendMessage(token: string, chatId: number, text: string): Promise<void> {
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
@@ -57,6 +67,73 @@ async function editMessageReplyMarkup(
   });
 }
 
+// ─── Cover letter generation ──────────────────────────────────────────────────
+
+async function generateCoverLetter(
+  settings: AppSettings,
+  job: { title: string; description: string; budget_text: string | null },
+): Promise<string> {
+  const { llm_provider: provider, llm_api_key: apiKey, llm_model: model, developer_profile: profile } = settings;
+
+  if (!provider || !apiKey || !model) {
+    throw new Error('LLM not configured in admin panel');
+  }
+
+  const url = provider === 'openai'
+    ? 'https://api.openai.com/v1/chat/completions'
+    : 'https://openrouter.ai/api/v1/chat/completions';
+
+  const profileSection = profile
+    ? `Developer profile:\n${profile}`
+    : 'Developer profile: Senior Full-Stack Developer, 4+ years experience, TypeScript/React/Node.js stack.';
+
+  const prompt = `You are writing a freelance cover letter on behalf of a developer.
+
+${profileSection}
+
+Job details:
+Title: ${job.title}
+Budget: ${job.budget_text ?? 'not specified'}
+Description: ${job.description.slice(0, 1500)}
+
+Write a concise, professional cover letter (3-4 short paragraphs) that:
+1. Opens by directly addressing the client's specific need from the job description
+2. Highlights 1-2 most relevant experiences from the developer profile that solve this exact problem
+3. Optionally mentions a concrete metric or result (e.g., reduced response time by 97%)
+4. Ends with a clear call to action (propose a call or ask a clarifying question)
+
+Rules:
+- Maximum 150 words
+- No generic phrases like "I am writing to apply..." or "I am a passionate developer"
+- Match the language of the job description (if English — write in English, if Ukrainian/Russian — write in Ukrainian)
+- Output ONLY the cover letter text, no subject line, no greeting, no explanation`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`LLM API error: ${response.status} ${response.statusText}`);
+  }
+
+  const json = await response.json() as { choices: Array<{ message: { content: string } }> };
+  const content = json.choices[0]?.message?.content?.trim();
+  if (!content) throw new Error('Empty LLM response');
+
+  return content;
+}
+
+// ─── Main handler ─────────────────────────────────────────────────────────────
+
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   if (req.method !== 'POST') {
     res.status(405).end();
@@ -88,46 +165,91 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       : '✅ Telegram підключено!\n\n⚠️ Бот ще не активний. Зайди в адмін-панель і увімкни його:\nhttps://freelance-monitor-xi.vercel.app/admin/';
 
     await sendMessage(token, chatId, text);
-
     res.status(200).json({ ok: true });
     return;
   }
 
-  // ─── Inline button callback ──────────────────────────────────────────────────
+  // ─── Inline button callbacks ──────────────────────────────────────────────────
   const cb = update.callback_query;
-
   if (!cb?.data || !cb.message) {
     res.status(200).json({ ok: true });
     return;
   }
 
-  // callback_data format: "hide:<jobId>"
-  const [action, jobId] = cb.data.split(':');
+  const colonIdx = cb.data.indexOf(':');
+  const action = colonIdx !== -1 ? cb.data.slice(0, colonIdx) : cb.data;
+  const jobId = colonIdx !== -1 ? cb.data.slice(colonIdx + 1) : '';
 
-  if (action !== 'hide' || !jobId) {
-    await answerCallbackQuery(token, cb.id, '');
+  // ─── Hide ────────────────────────────────────────────────────────────────────
+  if (action === 'hide' && jobId) {
+    try {
+      const { error } = await supabase
+        .from('jobs')
+        .update({ status: 'hidden_by_user' })
+        .eq('id', jobId)
+        .in('status', ['published', 'publish_ready']);
+
+      if (error) throw error;
+
+      await Promise.all([
+        answerCallbackQuery(token, cb.id, '🙈 Сховано'),
+        editMessageReplyMarkup(token, cb.message.chat.id, cb.message.message_id, '🙈 Сховано'),
+      ]);
+    } catch (err) {
+      console.error('[webhook] hide error:', err);
+      await answerCallbackQuery(token, cb.id, 'Помилка, спробуй ще раз');
+    }
+
     res.status(200).json({ ok: true });
     return;
   }
 
-  try {
-    const { error } = await supabase
-      .from('jobs')
-      .update({ status: 'hidden_by_user' })
-      .eq('id', jobId)
-      .in('status', ['published', 'publish_ready']);
+  // ─── Cover letter ─────────────────────────────────────────────────────────────
+  if (action === 'cover' && jobId) {
+    // Answer immediately so Telegram doesn't show spinner
+    await answerCallbackQuery(token, cb.id, '✍️ Генерую відгук...');
 
-    if (error) throw error;
+    try {
+      const [jobResult, settingsResult] = await Promise.all([
+        supabase
+          .from('jobs')
+          .select('title, description, budget_text')
+          .eq('id', jobId)
+          .single(),
+        supabase
+          .from('app_settings')
+          .select('llm_provider, llm_api_key, llm_model, developer_profile')
+          .eq('id', 1)
+          .single(),
+      ]);
 
-    await Promise.all([
-      answerCallbackQuery(token, cb.id, '🙈 Сховано'),
-      editMessageReplyMarkup(token, cb.message.chat.id, cb.message.message_id, '🙈 Сховано'),
-    ]);
+      if (jobResult.error) throw jobResult.error;
+      if (settingsResult.error) throw settingsResult.error;
+
+      const job = jobResult.data as { title: string; description: string; budget_text: string | null };
+      const settings = settingsResult.data as AppSettings;
+
+      const coverLetter = await generateCoverLetter(settings, job);
+
+      await sendMessage(
+        token,
+        cb.message.chat.id,
+        `✍️ *Відгук на:* ${job.title}\n\n${coverLetter}`,
+      );
+    } catch (err) {
+      console.error('[webhook] cover letter error:', err);
+      await sendMessage(
+        token,
+        cb.message.chat.id,
+        '❌ Не вдалося згенерувати відгук. Перевір налаштування LLM в адмін-панелі.',
+      );
+    }
 
     res.status(200).json({ ok: true });
-  } catch (err) {
-    console.error('[webhook] Error:', err);
-    await answerCallbackQuery(token, cb.id, 'Помилка, спробуй ще раз');
-    res.status(200).json({ ok: false });
+    return;
   }
+
+  // Unknown action
+  await answerCallbackQuery(token, cb.id, '');
+  res.status(200).json({ ok: true });
 }

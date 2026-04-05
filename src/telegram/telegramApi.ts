@@ -59,10 +59,15 @@ export async function sendTelegramMessage(msg: TelegramMessage, chatId: string):
     text: lines.join('\n'),
     parse_mode: 'MarkdownV2',
     reply_markup: {
-      inline_keyboard: [[
-        { text: '✅ Взяти', url: msg.link },
-        { text: '🙈 Сховати', callback_data: `hide:${msg.jobId}` },
-      ]],
+      inline_keyboard: [
+        [
+          { text: '✅ Взяти', url: msg.link },
+          { text: '🙈 Сховати', callback_data: `hide:${msg.jobId}` },
+        ],
+        [
+          { text: '✍️ Написати відгук', callback_data: `cover:${msg.jobId}` },
+        ],
+      ],
     },
   };
 
