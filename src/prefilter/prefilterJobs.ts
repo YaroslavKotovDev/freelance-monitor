@@ -8,14 +8,12 @@ function isRejected(title: string, description: string): boolean {
   return getSettings().stop_words.some((word) => text.includes(word.toLowerCase()));
 }
 
-const MAX_AGE_DAYS = 30;
+const MAX_AGE_HOURS = 12;
 
 function isRecentEnough(isoDate: string | null): boolean {
   if (!isoDate) return true; // no date = don't filter out
   const pubDate = new Date(isoDate);
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - MAX_AGE_DAYS);
-  cutoff.setHours(0, 0, 0, 0);
+  const cutoff = new Date(Date.now() - MAX_AGE_HOURS * 60 * 60 * 1000);
   return pubDate >= cutoff;
 }
 
