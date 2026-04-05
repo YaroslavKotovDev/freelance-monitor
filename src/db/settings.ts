@@ -6,6 +6,9 @@ export interface AppSettings {
   min_score: number;
   active_sources: string[];
   telegram_chat_id: number | null;
+  llm_provider: string | null;
+  llm_api_key: string | null;
+  llm_model: string | null;
 }
 
 let cached: AppSettings | null = null;
@@ -13,7 +16,7 @@ let cached: AppSettings | null = null;
 export async function loadSettings(): Promise<AppSettings> {
   const { data, error } = await supabase
     .from('app_settings')
-    .select('is_bot_active, stop_words, min_score, active_sources, telegram_chat_id')
+    .select('is_bot_active, stop_words, min_score, active_sources, telegram_chat_id, llm_provider, llm_api_key, llm_model')
     .eq('id', 1)
     .single();
 
@@ -25,6 +28,9 @@ export async function loadSettings(): Promise<AppSettings> {
     min_score: data.min_score as number,
     active_sources: data.active_sources as string[],
     telegram_chat_id: data.telegram_chat_id as number | null,
+    llm_provider: data.llm_provider as string | null,
+    llm_api_key: data.llm_api_key as string | null,
+    llm_model: data.llm_model as string | null,
   };
 
   return cached;

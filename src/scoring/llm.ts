@@ -1,10 +1,5 @@
 import { z } from 'zod';
-
-function getRequiredEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing required environment variable: ${name}`);
-  return value;
-}
+import { getSettings } from '../db/settings.js';
 
 export const AiScoreSchema = z.object({
   relevanceScore: z.number().int().min(0).max(100),
@@ -52,9 +47,10 @@ export async function callLlm(
   budget: string | null,
   source: string,
 ): Promise<AiScore> {
-  const apiKey = getRequiredEnv('LLM_API_KEY');
-  const model = getRequiredEnv('LLM_MODEL');
-  const provider = getRequiredEnv('LLM_PROVIDER');
+  const { llm_api_key: apiKey, llm_model: model, llm_provider: provider } = getSettings();
+  if (!apiKey || !model || !provider) {
+    throw new Error('LLM not configured — set llm_provider, llm_api_key and llm_model in the admin panel');
+  }
 
   const url = provider === 'openai'
     ? 'https://api.openai.com/v1/chat/completions'

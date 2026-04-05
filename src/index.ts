@@ -16,6 +16,11 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
+  if (!settings.llm_api_key || !settings.llm_model || !settings.llm_provider) {
+    console.error('[pipeline] LLM not configured — set llm_provider, llm_api_key and llm_model in the admin panel');
+    process.exit(1);
+  }
+
   console.log('[pipeline] Stage 2: Ingestion');
   await fetchJobs();
 

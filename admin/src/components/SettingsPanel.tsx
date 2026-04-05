@@ -8,6 +8,9 @@ interface Settings {
   min_score: number
   active_sources: string[]
   telegram_chat_id: number | null
+  llm_provider: string | null
+  llm_api_key: string | null
+  llm_model: string | null
 }
 
 interface Props {
@@ -184,7 +187,7 @@ export default function SettingsPanel({ session }: Props) {
   useEffect(() => {
     supabase
       .from('app_settings')
-      .select('is_bot_active, stop_words, min_score, active_sources, telegram_chat_id')
+      .select('is_bot_active, stop_words, min_score, active_sources, telegram_chat_id, llm_provider, llm_api_key, llm_model')
       .eq('id', 1)
       .single()
       .then(({ data, error }) => {
@@ -228,6 +231,9 @@ export default function SettingsPanel({ session }: Props) {
         stop_words,
         min_score: settings.min_score,
         active_sources: settings.active_sources,
+        llm_provider: settings.llm_provider || null,
+        llm_api_key: settings.llm_api_key || null,
+        llm_model: settings.llm_model || null,
       })
       .eq('id', 1)
 
@@ -323,6 +329,50 @@ export default function SettingsPanel({ session }: Props) {
             {label}
           </label>
         ))}
+      </div>
+
+      {/* LLM settings */}
+      <div style={s.card}>
+        <div style={s.cardTitle}>AI / LLM</div>
+
+        <label style={s.label}>
+          Провайдер
+          <select
+            value={settings.llm_provider ?? ''}
+            onChange={(e) => update('llm_provider', e.target.value || null)}
+            style={{ ...s.input, marginTop: '8px', cursor: 'pointer' }}
+          >
+            <option value="">— оберіть —</option>
+            <option value="openai">OpenAI</option>
+            <option value="openrouter">OpenRouter</option>
+          </select>
+        </label>
+
+        <label style={{ ...s.label, marginTop: '16px' }}>
+          API Key
+          <input
+            type="password"
+            value={settings.llm_api_key ?? ''}
+            onChange={(e) => update('llm_api_key', e.target.value || null)}
+            placeholder="sk-..."
+            style={{ ...s.input, marginTop: '8px' }}
+          />
+        </label>
+
+        <label style={{ ...s.label, marginTop: '16px' }}>
+          Модель
+          <input
+            type="text"
+            value={settings.llm_model ?? ''}
+            onChange={(e) => update('llm_model', e.target.value || null)}
+            placeholder="gpt-4.1-mini або openai/gpt-4.1-mini"
+            style={{ ...s.input, marginTop: '8px' }}
+          />
+        </label>
+        <div style={s.hint}>
+          OpenAI: <code style={{ color: '#666' }}>gpt-4.1-mini</code> &nbsp;·&nbsp;
+          OpenRouter: <code style={{ color: '#666' }}>openai/gpt-4.1-mini</code>
+        </div>
       </div>
 
       {/* Min score */}
