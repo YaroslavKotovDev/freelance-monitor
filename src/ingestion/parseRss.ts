@@ -68,6 +68,27 @@ const RSS_SOURCES: readonly RssSource[] = [
     source: 'guru-nodejs',
     format: 'rss',
   },
+  // ── Upwork — freelance jobs (requires login on some queries, may return 403) ──
+  {
+    url: 'https://www.upwork.com/ab/feed/jobs/rss?q=react&sort=recency',
+    source: 'upwork-react',
+    format: 'rss',
+  },
+  {
+    url: 'https://www.upwork.com/ab/feed/jobs/rss?q=typescript&sort=recency',
+    source: 'upwork-typescript',
+    format: 'rss',
+  },
+  {
+    url: 'https://www.upwork.com/ab/feed/jobs/rss?q=vue.js&sort=recency',
+    source: 'upwork-vue',
+    format: 'rss',
+  },
+  {
+    url: 'https://www.upwork.com/ab/feed/jobs/rss?q=node.js&sort=recency',
+    source: 'upwork-nodejs',
+    format: 'rss',
+  },
 ];
 
 const FETCH_HEADERS = {
