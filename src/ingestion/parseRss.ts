@@ -8,28 +8,42 @@ interface RssSource {
 }
 
 const RSS_SOURCES: readonly RssSource[] = [
+  // ── Freelancer.com keyword feeds (?jobs= is broken, ?keyword= works) ─────────
   {
-    // Freelancer.com — JavaScript (id=3)
-    url: 'https://www.freelancer.com/rss.xml?jobs=3',
-    source: 'freelancer-js',
-    format: 'rss',
-  },
-  {
-    // Freelancer.com — HTML/CSS (id=9)
-    url: 'https://www.freelancer.com/rss.xml?jobs=9',
-    source: 'freelancer-html',
-    format: 'rss',
-  },
-  {
-    // Freelancer.com — React.js (id=759)
-    url: 'https://www.freelancer.com/rss.xml?jobs=759',
+    url: 'https://www.freelancer.com/rss.xml?keyword=react',
     source: 'freelancer-react',
     format: 'rss',
   },
   {
-    // Reddit r/forhire — [Hiring] posts only (filtered during parse)
+    url: 'https://www.freelancer.com/rss.xml?keyword=typescript',
+    source: 'freelancer-typescript',
+    format: 'rss',
+  },
+  {
+    url: 'https://www.freelancer.com/rss.xml?keyword=vue',
+    source: 'freelancer-vue',
+    format: 'rss',
+  },
+  {
+    url: 'https://www.freelancer.com/rss.xml?keyword=next.js',
+    source: 'freelancer-nextjs',
+    format: 'rss',
+  },
+  {
+    url: 'https://www.freelancer.com/rss.xml?keyword=node.js',
+    source: 'freelancer-nodejs',
+    format: 'rss',
+  },
+  // ── Reddit r/forhire — [Hiring] posts only (filtered during parse) ───────────
+  {
     url: 'https://www.reddit.com/r/forhire/new/.rss',
     source: 'reddit-forhire',
+    format: 'atom',
+  },
+  // ── Reddit r/slavelabour — small paid gigs ───────────────────────────────────
+  {
+    url: 'https://www.reddit.com/r/slavelabour/new/.rss',
+    source: 'reddit-slavelabour',
     format: 'atom',
   },
 ];
@@ -157,8 +171,11 @@ function parseAtomEntry(entryXml: string, source: string): JobInput | null {
   const title = decodeEntities(extractText(entryXml, 'title'));
   const link = extractAtomLink(entryXml);
 
-  // Reddit r/forhire: skip posts that are NOT from job posters ([Hiring] only)
-  if (source === 'reddit-forhire' && !title.toLowerCase().includes('[hiring]')) {
+  // Reddit feeds: skip posts that are NOT from job posters ([Hiring] only)
+  if (
+    (source === 'reddit-forhire' || source === 'reddit-slavelabour') &&
+    !title.toLowerCase().includes('[hiring]')
+  ) {
     return null;
   }
 

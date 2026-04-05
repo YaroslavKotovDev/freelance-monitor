@@ -19,10 +19,13 @@ interface Props {
 }
 
 const ALL_SOURCES = [
-  { key: 'freelancer-js',    label: 'Freelancer.com — JavaScript' },
-  { key: 'freelancer-html',  label: 'Freelancer.com — HTML/CSS' },
-  { key: 'freelancer-react', label: 'Freelancer.com — React.js' },
-  { key: 'reddit-forhire',   label: 'Reddit r/forhire' },
+  { key: 'freelancer-react',      label: 'Freelancer.com — React' },
+  { key: 'freelancer-typescript', label: 'Freelancer.com — TypeScript' },
+  { key: 'freelancer-vue',        label: 'Freelancer.com — Vue.js' },
+  { key: 'freelancer-nextjs',     label: 'Freelancer.com — Next.js' },
+  { key: 'freelancer-nodejs',     label: 'Freelancer.com — Node.js' },
+  { key: 'reddit-forhire',        label: 'Reddit r/forhire' },
+  { key: 'reddit-slavelabour',    label: 'Reddit r/slavelabour' },
 ]
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
