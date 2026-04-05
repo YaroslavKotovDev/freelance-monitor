@@ -87,26 +87,30 @@ async function generateCoverLetter(
     ? `Developer profile:\n${profile}`
     : 'Developer profile: Senior Full-Stack Developer, 4+ years experience, TypeScript/React/Node.js stack.';
 
-  const prompt = `You are writing a freelance cover letter on behalf of a developer.
+  const prompt = `You are a conversion-focused copywriter writing a freelance bid on behalf of an experienced freelancer.
+Your goal: make the CLIENT feel this is exactly the person they were looking for.
 
 ${profileSection}
 
-Job details:
+Job posting:
 Title: ${job.title}
 Budget: ${job.budget_text ?? 'not specified'}
 Description: ${job.description.slice(0, 1500)}
 
-Write a concise, professional cover letter (3-4 short paragraphs) that:
-1. Opens by directly addressing the client's specific need from the job description
-2. Highlights 1-2 most relevant experiences from the developer profile that solve this exact problem
-3. Optionally mentions a concrete metric or result (e.g., reduced response time by 97%)
-4. Ends with a clear call to action (propose a call or ask a clarifying question)
+Instructions:
+1. First sentence: mirror the client's core problem back to them in your own words — show you actually read and understood it
+2. Second paragraph: pick the 1-2 most relevant experiences from the developer profile that directly solve THIS job. Be specific — mention tech, numbers, outcomes.
+3. Optional: one short sentence that preemptively kills the biggest objection (timeline, stack fit, or availability)
+4. Final sentence: a low-friction CTA — ask one smart clarifying question about the project OR offer to show a relevant example. Never say "let's hop on a call" generically.
 
-Rules:
-- Maximum 150 words
-- No generic phrases like "I am writing to apply..." or "I am a passionate developer"
-- Match the language of the job description (if English — write in English, if Ukrainian/Russian — write in Ukrainian)
-- Output ONLY the cover letter text, no subject line, no greeting, no explanation`;
+Tone & style rules:
+- Write as a confident, busy freelancer who picks projects carefully — not someone desperate for work
+- Sound like a human, not a corporate email
+- No opener like "I am writing to apply", "I am a passionate developer", "I would love to", "I am excited"
+- No self-praise without proof ("I am the best" → forbidden; "reduced response time by 97%" → perfect)
+- Keep it tight: 3 short paragraphs, maximum 130 words total
+- Match the language of the job description exactly (English job → English reply, Ukrainian → Ukrainian, Russian → Russian)
+- Output ONLY the cover letter text — no subject line, no greeting, no label, no explanation`;
 
   const response = await fetch(url, {
     method: 'POST',
