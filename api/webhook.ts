@@ -74,16 +74,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   if (update.message?.text?.startsWith('/start')) {
     const chatId = update.message.chat.id;
 
-    await supabase
+    const { data: settings } = await supabase
       .from('app_settings')
       .update({ telegram_chat_id: chatId })
-      .eq('id', 1);
+      .eq('id', 1)
+      .select('is_bot_active')
+      .single();
 
-    await sendMessage(
-      token,
-      chatId,
-      '✅ Підключено! Тепер ти будеш отримувати сповіщення про нові вакансії.',
-    );
+    const isActive = (settings as { is_bot_active: boolean } | null)?.is_bot_active ?? false;
+
+    const text = isActive
+      ? '✅ Підключено! Вакансії почнуть надходити автоматично кожні 30 хвилин.'
+      : '✅ Telegram підключено!\n\n⚠️ Бот ще не активний. Зайди в адмін-панель і увімкни його:\nhttps://freelance-monitor-xi.vercel.app/admin/';
+
+    await sendMessage(token, chatId, text);
 
     res.status(200).json({ ok: true });
     return;
