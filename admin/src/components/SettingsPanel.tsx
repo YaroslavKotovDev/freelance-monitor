@@ -257,6 +257,15 @@ export default function SettingsPanel({ session }: Props) {
 
   if (!settings) return null
 
+  const missingFields: string[] = []
+  if (!settings.telegram_chat_id) missingFields.push('Telegram не підключено — надішли /start боту')
+  if (!settings.llm_provider)     missingFields.push('Провайдер AI не обраний')
+  if (!settings.llm_api_key)      missingFields.push('API Key не вказано')
+  if (!settings.llm_model)        missingFields.push('Модель не вказана')
+  if ((settings.active_sources ?? []).length === 0) missingFields.push('Жодне джерело не активоване')
+
+  const canActivate = missingFields.length === 0
+
   return (
     <div style={s.page}>
       {/* Header */}
@@ -269,6 +278,24 @@ export default function SettingsPanel({ session }: Props) {
           Вийти
         </button>
       </div>
+
+      {/* Missing fields banner */}
+      {missingFields.length > 0 && (
+        <div style={{
+          background: '#1c1500',
+          border: '1px solid #78350f',
+          borderRadius: '12px',
+          padding: '16px 20px',
+          marginBottom: '16px',
+        }}>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: '#f59e0b', marginBottom: '10px' }}>
+            ⚠️ Бот не може запуститись — заповніть обов'язкові поля:
+          </div>
+          {missingFields.map((f) => (
+            <div key={f} style={{ fontSize: '13px', color: '#92400e', marginBottom: '4px' }}>✗ {f}</div>
+          ))}
+        </div>
+      )}
 
       {msg && <div style={s.message(msg.type)}>{msg.text}</div>}
 
@@ -299,17 +326,19 @@ export default function SettingsPanel({ session }: Props) {
       {/* Bot toggle */}
       <div style={s.card}>
         <div style={s.cardTitle}>Головний рубильник</div>
-        <label style={{ ...s.toggle }}>
+        <label style={{ ...s.toggle, opacity: canActivate ? 1 : 0.4, cursor: canActivate ? 'pointer' : 'not-allowed' }}>
           <Toggle
             checked={settings.is_bot_active}
-            onChange={(v) => update('is_bot_active', v)}
+            onChange={(v) => { if (canActivate) update('is_bot_active', v) }}
           />
           <div>
             <div style={{ fontSize: '15px', color: settings.is_bot_active ? '#22c55e' : '#888', fontWeight: 600 }}>
               {settings.is_bot_active ? 'Бот увімкнений' : 'Бот вимкнений'}
             </div>
             <div style={{ fontSize: '12px', color: '#444', marginTop: '2px' }}>
-              Якщо вимкнено — пайплайн завершується одразу без зайвих запитів
+              {canActivate
+                ? 'Якщо вимкнено — пайплайн завершується одразу без зайвих запитів'
+                : 'Заповніть усі обов\'язкові поля щоб увімкнути бота'}
             </div>
           </div>
         </label>

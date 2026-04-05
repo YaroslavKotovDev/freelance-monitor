@@ -16,8 +16,18 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  if (!settings.llm_api_key || !settings.llm_model || !settings.llm_provider) {
-    console.error('[pipeline] LLM not configured — set llm_provider, llm_api_key and llm_model in the admin panel');
+  // Validate all required fields before doing any work
+  const missing: string[] = [];
+  if (!settings.telegram_chat_id) missing.push('telegram_chat_id (send /start to the bot)');
+  if (!settings.llm_provider)     missing.push('llm_provider');
+  if (!settings.llm_api_key)      missing.push('llm_api_key');
+  if (!settings.llm_model)        missing.push('llm_model');
+  if (settings.active_sources.length === 0) missing.push('active_sources (enable at least one source)');
+
+  if (missing.length > 0) {
+    console.error('[pipeline] Cannot start — required settings not configured:');
+    missing.forEach((f) => console.error(`  ✗ ${f}`));
+    console.error('[pipeline] Fix these in the admin panel and try again.');
     process.exit(1);
   }
 
