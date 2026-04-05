@@ -11,16 +11,40 @@ function backoffMinutes(attempt: number): number {
   return schedule[attempt - 1] ?? 720; // 12h fallback
 }
 
-export async function scoreJobs(): Promise<{ publishReady: number; rejected: number }> {
-  const { data: jobs, error } = await supabase
+/** Fetch recent user feedback to pass as context to LLM */
+async function fetchFeedbackContext(): Promise<{ taken: string[]; hidden: string[] }> {
+  const { data } = await supabase
     .from('jobs')
-    .select('id, title, description, budget_text, source, attempt_count')
-    .eq('status', 'ready_for_llm')
-    .or('next_retry_at.is.null,next_retry_at.lte.' + new Date().toISOString())
-    .order('created_at', { ascending: true })
-    .limit(BATCH_SIZE);
+    .select('title, user_action')
+    .in('user_action', ['taken', 'hidden'])
+    .order('user_action_at', { ascending: false })
+    .limit(20);
 
-  if (error) throw new Error(`Failed to fetch ready_for_llm jobs: ${error.message}`);
+  const taken: string[] = [];
+  const hidden: string[] = [];
+
+  for (const row of data ?? []) {
+    if (row.user_action === 'taken') taken.push(row.title as string);
+    else hidden.push(row.title as string);
+  }
+
+  return { taken, hidden };
+}
+
+export async function scoreJobs(): Promise<{ publishReady: number; rejected: number }> {
+  const [jobsResult, feedback] = await Promise.all([
+    supabase
+      .from('jobs')
+      .select('id, title, description, budget_text, source, attempt_count')
+      .eq('status', 'ready_for_llm')
+      .or('next_retry_at.is.null,next_retry_at.lte.' + new Date().toISOString())
+      .order('created_at', { ascending: true })
+      .limit(BATCH_SIZE),
+    fetchFeedbackContext(),
+  ]);
+
+  if (jobsResult.error) throw new Error(`Failed to fetch ready_for_llm jobs: ${jobsResult.error.message}`);
+  const jobs = jobsResult.data;
 
   let publishReady = 0;
   let rejected = 0;
@@ -41,6 +65,7 @@ export async function scoreJobs(): Promise<{ publishReady: number; rejected: num
         job.description as string,
         (job.budget_text as string | null) ?? null,
         job.source as string,
+        feedback,
       );
 
       const status = aiScore.relevanceScore >= getSettings().min_score ? 'publish_ready' : 'llm_rejected';

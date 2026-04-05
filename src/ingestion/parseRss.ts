@@ -46,6 +46,28 @@ const RSS_SOURCES: readonly RssSource[] = [
     source: 'reddit-slavelabour',
     format: 'atom',
   },
+  // ── PeoplePerHour — freelance gigs ───────────────────────────────────────────
+  {
+    url: 'https://www.peopleperhour.com/rss/hourlie?keyword=javascript',
+    source: 'pph-js',
+    format: 'rss',
+  },
+  {
+    url: 'https://www.peopleperhour.com/rss/hourlie?keyword=react',
+    source: 'pph-react',
+    format: 'rss',
+  },
+  // ── Guru.com — freelance gigs ─────────────────────────────────────────────────
+  {
+    url: 'https://www.guru.com/jobs/rss/?skill=react',
+    source: 'guru-react',
+    format: 'rss',
+  },
+  {
+    url: 'https://www.guru.com/jobs/rss/?skill=node.js',
+    source: 'guru-nodejs',
+    format: 'rss',
+  },
 ];
 
 const FETCH_HEADERS = {

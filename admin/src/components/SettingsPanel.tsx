@@ -6,6 +6,7 @@ interface Settings {
   is_bot_active: boolean
   stop_words: string[]
   min_score: number
+  min_budget_usd: number
   active_sources: string[]
   telegram_chat_id: number | null
   llm_provider: string | null
@@ -191,7 +192,7 @@ export default function SettingsPanel({ session }: Props) {
   useEffect(() => {
     supabase
       .from('app_settings')
-      .select('is_bot_active, stop_words, min_score, active_sources, telegram_chat_id, llm_provider, llm_api_key, llm_model, developer_profile')
+      .select('is_bot_active, stop_words, min_score, min_budget_usd, active_sources, telegram_chat_id, llm_provider, llm_api_key, llm_model, developer_profile')
       .eq('id', 1)
       .single()
       .then(({ data, error }) => {
@@ -234,6 +235,7 @@ export default function SettingsPanel({ session }: Props) {
         is_bot_active: settings.is_bot_active,
         stop_words,
         min_score: settings.min_score,
+        min_budget_usd: settings.min_budget_usd,
         active_sources: settings.active_sources,
         llm_provider: settings.llm_provider || null,
         llm_api_key: settings.llm_api_key || null,
@@ -423,11 +425,11 @@ export default function SettingsPanel({ session }: Props) {
         <div style={s.hint}>Чим конкретніше — тим кращий відгук. Вказуй цифри, технології, конкретні результати.</div>
       </div>
 
-      {/* Min score */}
+      {/* Min score + Min budget */}
       <div style={s.card}>
-        <div style={s.cardTitle}>Поріг AI-скорингу</div>
+        <div style={s.cardTitle}>Фільтри якості</div>
         <label style={s.label}>
-          Мінімальний бал (0–100)
+          Мінімальний AI-бал (0–100)
           <input
             type="number"
             min={0}
@@ -438,6 +440,18 @@ export default function SettingsPanel({ session }: Props) {
           />
         </label>
         <div style={s.hint}>Вакансії з балом нижче цього порогу відхиляються AI-скорером</div>
+
+        <label style={{ ...s.label, marginTop: '20px' }}>
+          Мінімальний бюджет ($USD)
+          <input
+            type="number"
+            min={0}
+            value={settings.min_budget_usd}
+            onChange={(e) => update('min_budget_usd', parseInt(e.target.value, 10) || 0)}
+            style={{ ...s.input, marginTop: '8px', width: '120px' }}
+          />
+        </label>
+        <div style={s.hint}>0 = без фільтру. Вакансії з бюджетом нижче цієї суми відхиляються до LLM</div>
       </div>
 
       {/* Stop words */}

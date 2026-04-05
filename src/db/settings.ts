@@ -4,6 +4,7 @@ export interface AppSettings {
   is_bot_active: boolean;
   stop_words: string[];
   min_score: number;
+  min_budget_usd: number;
   active_sources: string[];
   telegram_chat_id: number | null;
   llm_provider: string | null;
@@ -16,7 +17,7 @@ let cached: AppSettings | null = null;
 export async function loadSettings(): Promise<AppSettings> {
   const { data, error } = await supabase
     .from('app_settings')
-    .select('is_bot_active, stop_words, min_score, active_sources, telegram_chat_id, llm_provider, llm_api_key, llm_model')
+    .select('is_bot_active, stop_words, min_score, min_budget_usd, active_sources, telegram_chat_id, llm_provider, llm_api_key, llm_model')
     .eq('id', 1)
     .single();
 
@@ -26,6 +27,7 @@ export async function loadSettings(): Promise<AppSettings> {
     is_bot_active: data.is_bot_active as boolean,
     stop_words: data.stop_words as string[],
     min_score: data.min_score as number,
+    min_budget_usd: data.min_budget_usd as number,
     active_sources: data.active_sources as string[],
     telegram_chat_id: data.telegram_chat_id as number | null,
     llm_provider: data.llm_provider as string | null,

@@ -65,7 +65,8 @@ export async function sendTelegramMessage(msg: TelegramMessage, chatId: string):
           { text: '🙈 Сховати', callback_data: `hide:${msg.jobId}` },
         ],
         [
-          { text: '✍️ Написати відгук', callback_data: `cover:${msg.jobId}` },
+          { text: '✍️ Відгук', callback_data: `cover:${msg.jobId}` },
+          { text: '👍 Цікаво', callback_data: `taken:${msg.jobId}` },
         ],
       ],
     },

@@ -189,7 +189,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     try {
       const { error } = await supabase
         .from('jobs')
-        .update({ status: 'hidden_by_user' })
+        .update({
+          status: 'hidden_by_user',
+          user_action: 'hidden',
+          user_action_at: new Date().toISOString(),
+        })
         .eq('id', jobId)
         .in('status', ['published', 'publish_ready']);
 
@@ -204,6 +208,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       await answerCallbackQuery(token, cb.id, 'Помилка, спробуй ще раз');
     }
 
+    res.status(200).json({ ok: true });
+    return;
+  }
+
+  // ─── Taken (✅ Взяти tracked via callback) ────────────────────────────────────
+  if (action === 'taken' && jobId) {
+    await supabase
+      .from('jobs')
+      .update({ user_action: 'taken', user_action_at: new Date().toISOString() })
+      .eq('id', jobId);
+
+    await answerCallbackQuery(token, cb.id, '✅ Успіхів!');
     res.status(200).json({ ok: true });
     return;
   }

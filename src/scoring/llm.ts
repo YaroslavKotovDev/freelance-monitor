@@ -46,11 +46,19 @@ export async function callLlm(
   description: string,
   budget: string | null,
   source: string,
+  feedback?: { taken: string[]; hidden: string[] },
 ): Promise<AiScore> {
   const { llm_api_key: apiKey, llm_model: model, llm_provider: provider } = getSettings();
   if (!apiKey || !model || !provider) {
     throw new Error('LLM not configured — set llm_provider, llm_api_key and llm_model in the admin panel');
   }
+
+  const feedbackSection = feedback && (feedback.taken.length > 0 || feedback.hidden.length > 0)
+    ? `\nUser feedback from previous jobs (learn from this):
+${feedback.taken.length > 0 ? `- LIKED (scored high, user engaged): ${feedback.taken.slice(0, 5).join(' | ')}` : ''}
+${feedback.hidden.length > 0 ? `- SKIPPED (user hid these): ${feedback.hidden.slice(0, 5).join(' | ')}` : ''}
+Adjust your scoring to match these preferences.\n`
+    : '';
 
   const url = provider === 'openai'
     ? 'https://api.openai.com/v1/chat/completions'
@@ -64,7 +72,7 @@ export async function callLlm(
     },
     body: JSON.stringify({
       model,
-      messages: [{ role: 'user', content: PROMPT_TEMPLATE(title, description, budget, source) }],
+      messages: [{ role: 'user', content: PROMPT_TEMPLATE(title, description, budget, source) + feedbackSection }],
       temperature: 0.2,
     }),
   });
