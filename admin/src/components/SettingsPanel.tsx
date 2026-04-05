@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../supabase'
 
+interface SourceHealth {
+  ok: boolean
+  last_run: string
+  error: string | null
+}
+
 interface Settings {
   is_bot_active: boolean
   stop_words: string[]
@@ -13,6 +19,7 @@ interface Settings {
   llm_api_key: string | null
   llm_model: string | null
   developer_profile: string | null
+  source_health: Record<string, SourceHealth> | null
 }
 
 interface Props {
@@ -188,7 +195,7 @@ export default function SettingsPanel({ session }: Props) {
   useEffect(() => {
     supabase
       .from('app_settings')
-      .select('is_bot_active, stop_words, min_score, min_budget_usd, active_sources, telegram_chat_id, llm_provider, llm_api_key, llm_model, developer_profile')
+      .select('is_bot_active, stop_words, min_score, min_budget_usd, active_sources, telegram_chat_id, llm_provider, llm_api_key, llm_model, developer_profile, source_health')
       .eq('id', 1)
       .single()
       .then(({ data, error }) => {
@@ -345,18 +352,26 @@ export default function SettingsPanel({ session }: Props) {
       <div style={s.card}>
         <div style={s.cardTitle}>Активні джерела</div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 16px' }}>
-          {ALL_SOURCES.map(({ key, label }) => (
-            <label key={key} style={s.checkbox}>
-              <input
-                type="checkbox"
-                checked={settings.active_sources.includes(key)}
-                onChange={(e) => toggleSource(key, e.target.checked)}
-                style={{ width: 15, height: 15, accentColor: '#22c55e', cursor: 'pointer', flexShrink: 0 }}
-              />
-              {label}
-            </label>
-          ))}
+          {ALL_SOURCES.map(({ key, label }) => {
+            const h = settings.source_health?.[key]
+            const dot = !h ? null : h.ok
+              ? <span title="Працює" style={{ color: '#22c55e', fontSize: 10 }}>●</span>
+              : <span title={h.error ?? 'Помилка'} style={{ color: '#ef4444', fontSize: 10 }}>●</span>
+            return (
+              <label key={key} style={s.checkbox}>
+                <input
+                  type="checkbox"
+                  checked={settings.active_sources.includes(key)}
+                  onChange={(e) => toggleSource(key, e.target.checked)}
+                  style={{ width: 15, height: 15, accentColor: '#22c55e', cursor: 'pointer', flexShrink: 0 }}
+                />
+                {label}
+                {dot && <span style={{ marginLeft: 4 }}>{dot}</span>}
+              </label>
+            )
+          })}
         </div>
+        <div style={{ ...s.hint, marginTop: 10 }}>● зелений — ОК, ● червоний — помилка на останньому запуску</div>
       </div>
 
       {/* LLM settings */}

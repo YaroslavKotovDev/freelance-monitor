@@ -18,11 +18,42 @@ function decodeHtmlEntities(text: string): string {
     .replace(/&nbsp;/g, ' ');
 }
 
+function scoreEmoji(score: number): string {
+  if (score >= 85) return '🔥';
+  if (score >= 70) return '🟡';
+  return '🔴';
+}
+
+function scoreBar(score: number): string {
+  const filled = Math.round(score / 10);
+  return '▓'.repeat(filled) + '░'.repeat(10 - filled);
+}
+
+const SOURCE_LABELS: Record<string, string> = {
+  'freelancer-react':      'Freelancer · React',
+  'freelancer-typescript': 'Freelancer · TS',
+  'freelancer-vue':        'Freelancer · Vue',
+  'freelancer-nextjs':     'Freelancer · Next.js',
+  'freelancer-nodejs':     'Freelancer · Node.js',
+  'pph-js':                'PeoplePerHour · JS',
+  'pph-react':             'PeoplePerHour · React',
+  'guru-react':            'Guru · React',
+  'guru-nodejs':           'Guru · Node.js',
+  'upwork-react':          'Upwork · React',
+  'upwork-typescript':     'Upwork · TS',
+  'upwork-vue':            'Upwork · Vue',
+  'upwork-nodejs':         'Upwork · Node.js',
+  'reddit-forhire':        'Reddit · r/forhire',
+  'reddit-slavelabour':    'Reddit · r/slavelabour',
+  'hn-hiring':             'HN · Who is Hiring',
+};
+
 export interface TelegramMessage {
   jobId: string;
   title: string;
   budget: string | null;
   source: string;
+  score: number;
   summary: string;
   recommendation: string;
   risks: string[];
@@ -39,18 +70,23 @@ export async function sendTelegramMessage(msg: TelegramMessage, chatId: string):
   const token = getRequiredEnv('TELEGRAM_BOT_TOKEN');
 
   const title = decodeHtmlEntities(msg.title);
+  const sourceLabel = SOURCE_LABELS[msg.source] ?? msg.source;
+  const emoji = scoreEmoji(msg.score);
+  const bar = scoreBar(msg.score);
+  const budget = msg.budget ?? 'не вказано';
   const risksText = msg.risks.length > 0
-    ? `⚠️ *Ризики:* ${escapeMarkdownV2(msg.risks.join(', '))}`
-    : null;
+    ? `\n⚠️ *Ризики:* ${escapeMarkdownV2(msg.risks.join('; '))}`
+    : '';
 
   const lines = [
-    `*${escapeMarkdownV2(title)}*`,
+    `${emoji} *${escapeMarkdownV2(title)}*`,
     ``,
-    `💰 *Бюджет:* ${escapeMarkdownV2(msg.budget ?? 'не вказано')}`,
-    `🌐 *Джерело:* ${escapeMarkdownV2(msg.source)}`,
-    `📋 *Суть:* ${escapeMarkdownV2(msg.summary)}`,
-    `🔧 *Стек:* ${escapeMarkdownV2(msg.stackFit)}`,
-    `💡 *Висновок:* ${escapeMarkdownV2(msg.recommendation)}`,
+    `${escapeMarkdownV2(bar)} *${msg.score}/100*  ·  ${escapeMarkdownV2(sourceLabel)}`,
+    `💰 ${escapeMarkdownV2(budget)}`,
+    ``,
+    `📋 ${escapeMarkdownV2(msg.summary)}`,
+    `💡 ${escapeMarkdownV2(msg.recommendation)}`,
+    `🔧 ${escapeMarkdownV2(msg.stackFit)}`,
     ...(risksText ? [risksText] : []),
   ];
 

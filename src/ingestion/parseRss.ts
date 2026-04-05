@@ -299,12 +299,22 @@ async function fetchFeed(rssSource: RssSource): Promise<JobInput[]> {
   }
 }
 
-export async function fetchRssJobs(activeSources?: string[]): Promise<JobInput[]> {
+export interface SourceHealthEntry {
+  ok: boolean;
+  last_run: string;
+  error: string | null;
+}
+
+export async function fetchRssJobs(
+  activeSources?: string[],
+): Promise<{ jobs: JobInput[]; health: Record<string, SourceHealthEntry> }> {
   const sources = activeSources
     ? RSS_SOURCES.filter((s) => activeSources.includes(s.source))
     : RSS_SOURCES;
   const results = await Promise.allSettled(sources.map(fetchFeed));
   const jobs: JobInput[] = [];
+  const health: Record<string, SourceHealthEntry> = {};
+  const now = new Date().toISOString();
 
   for (let i = 0; i < results.length; i++) {
     const result = results[i];
@@ -314,10 +324,13 @@ export async function fetchRssJobs(activeSources?: string[]): Promise<JobInput[]
     if (result.status === 'fulfilled') {
       console.log(`[ingestion] ${src.source}: fetched ${result.value.length} items`);
       jobs.push(...result.value);
+      health[src.source] = { ok: true, last_run: now, error: null };
     } else {
-      console.error(`[ingestion] ${src.source}: failed — ${(result.reason as Error).message}`);
+      const errMsg = (result.reason as Error).message;
+      console.error(`[ingestion] ${src.source}: failed — ${errMsg}`);
+      health[src.source] = { ok: false, last_run: now, error: errMsg.slice(0, 200) };
     }
   }
 
-  return jobs;
+  return { jobs, health };
 }

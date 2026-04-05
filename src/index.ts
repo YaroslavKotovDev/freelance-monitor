@@ -3,6 +3,7 @@ import { fetchJobs } from './ingestion/fetchJobs.js';
 import { prefilterJobs } from './prefilter/prefilterJobs.js';
 import { scoreJobs } from './scoring/scoreJobs.js';
 import { notifyUser } from './telegram/notifyUser.js';
+import { sendDigest } from './telegram/sendDigest.js';
 
 async function main(): Promise<void> {
   console.log('[pipeline] Starting freelance-monitor run...');
@@ -29,6 +30,13 @@ async function main(): Promise<void> {
     missing.forEach((f) => console.error(`  ✗ ${f}`));
     console.error('[pipeline] Fix these in the admin panel and try again.');
     process.exit(1);
+  }
+
+  // Digest mode — send morning summary and exit
+  if (process.env['DIGEST'] === 'true') {
+    console.log('[pipeline] Digest mode — sending morning summary');
+    await sendDigest();
+    return;
   }
 
   console.log('[pipeline] Stage 2: Ingestion');

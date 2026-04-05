@@ -36,13 +36,21 @@ const PAGE_SIZE = 25
 
 export default function JobsPanel() {
   const [statusFilter, setStatusFilter] = useState('')
+  const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [jobs, setJobs] = useState<Job[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(0)
   const [total, setTotal] = useState(0)
 
-  // Reset page when filter changes
-  useEffect(() => { setPage(0) }, [statusFilter])
+  // Debounce search
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 350)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
+  // Reset page when filter/search changes
+  useEffect(() => { setPage(0) }, [statusFilter, search])
 
   useEffect(() => {
     setLoading(true)
@@ -53,13 +61,14 @@ export default function JobsPanel() {
       .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
     if (statusFilter) q = q.eq('status', statusFilter)
+    if (search.trim()) q = q.ilike('title', `%${search.trim()}%`)
 
     q.then(({ data, count }) => {
       setJobs((data ?? []) as Job[])
       setTotal(count ?? 0)
       setLoading(false)
     })
-  }, [statusFilter, page])
+  }, [statusFilter, search, page])
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
@@ -69,17 +78,26 @@ export default function JobsPanel() {
         Вакансії <span style={s.totalBadge}>{total}</span>
       </h2>
 
-      {/* Status tabs */}
-      <div style={s.tabs}>
-        {STATUS_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setStatusFilter(tab.key)}
-            style={{ ...s.tab, ...(statusFilter === tab.key ? s.tabActive : {}) }}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Status tabs + Search */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={s.tabs}>
+          {STATUS_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setStatusFilter(tab.key)}
+              style={{ ...s.tab, ...(statusFilter === tab.key ? s.tabActive : {}) }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <input
+          type="text"
+          placeholder="🔍 Пошук по назві..."
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          style={s.searchInput}
+        />
       </div>
 
       {/* Table */}
@@ -169,7 +187,8 @@ const s: Record<string, React.CSSProperties> = {
   wrap: { maxWidth: 960, margin: '0 auto', padding: '24px 16px' },
   h2: { margin: '0 0 16px', fontSize: 22, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 10 },
   totalBadge: { fontSize: 14, fontWeight: 500, color: '#9ca3af' },
-  tabs: { display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' },
+  tabs: { display: 'flex', gap: 6, flexWrap: 'wrap' },
+  searchInput: { padding: '6px 12px', borderRadius: 7, border: '1px solid #e5e7eb', background: '#fff', fontSize: 13, fontFamily: 'inherit', outline: 'none', minWidth: 200 },
   tab: { padding: '6px 14px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer', fontSize: 13, color: '#555', fontFamily: 'inherit', transition: 'all .15s' },
   tabActive: { background: '#111', color: '#fff', borderColor: '#111' },
   tableWrap: { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, overflow: 'hidden' },

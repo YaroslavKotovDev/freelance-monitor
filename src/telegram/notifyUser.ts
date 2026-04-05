@@ -40,6 +40,7 @@ export async function notifyUser(): Promise<{ sent: number; failed: number }> {
         title: job.title as string,
         budget: (job.budget_text as string | null) ?? null,
         source: job.source as string,
+        score: aiScore?.relevanceScore ?? 0,
         summary: aiScore?.summary ?? '—',
         recommendation: aiScore?.recommendation ?? '—',
         risks: aiScore?.risks ?? [],

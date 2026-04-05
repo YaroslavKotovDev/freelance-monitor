@@ -151,6 +151,55 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
 
   const update = req.body as TelegramUpdate;
 
+  // ─── /scan command — trigger GitHub Actions pipeline ────────────────────────
+  if (update.message?.text?.startsWith('/scan')) {
+    const chatId = update.message.chat.id;
+
+    // Only allow the registered user
+    const { data: settingsRow } = await supabase
+      .from('app_settings')
+      .select('telegram_chat_id')
+      .eq('id', 1)
+      .single();
+
+    if ((settingsRow as { telegram_chat_id: number } | null)?.telegram_chat_id !== chatId) {
+      await sendMessage(token, chatId, '⛔ Не авторизовано');
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    const githubToken = process.env['GITHUB_TOKEN'];
+    const githubRepo = process.env['GITHUB_REPO']; // e.g. "YaroslavKotovDev/freelance-monitor"
+
+    if (!githubToken || !githubRepo) {
+      await sendMessage(token, chatId, '⚠️ GITHUB\\_TOKEN або GITHUB\\_REPO не налаштовані у Vercel');
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    const dispatchRes = await fetch(
+      `https://api.github.com/repos/${githubRepo}/actions/workflows/monitor.yml/dispatches`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${githubToken}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ref: 'main' }),
+      },
+    );
+
+    if (dispatchRes.ok) {
+      await sendMessage(token, chatId, '🚀 Пошук вакансій запущено\\!\nРезультати прийдуть за кілька хвилин\\.');
+    } else {
+      await sendMessage(token, chatId, '❌ Не вдалося запустити пошук. Перевір GITHUB\\_TOKEN у Vercel\\.');
+    }
+
+    res.status(200).json({ ok: true });
+    return;
+  }
+
   // ─── /start command — register chat_id ──────────────────────────────────────
   if (update.message?.text?.startsWith('/start')) {
     const chatId = update.message.chat.id;
