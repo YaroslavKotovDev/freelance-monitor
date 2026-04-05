@@ -40,87 +40,70 @@ const ALL_SOURCES = [
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const s = {
+const s: Record<string, React.CSSProperties> = {
   page: {
     maxWidth: '680px',
     margin: '0 auto',
-    padding: '40px 24px 80px',
-  } as React.CSSProperties,
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '40px',
-  } as React.CSSProperties,
-  title: {
-    fontSize: '22px',
-    fontWeight: 700,
-    color: '#fff',
-  } as React.CSSProperties,
-  signOut: {
-    background: 'none',
-    border: '1px solid #2a2a2a',
-    color: '#555',
-    padding: '8px 14px',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '13px',
-  } as React.CSSProperties,
+    padding: '24px 16px 80px',
+  },
   card: {
-    background: '#1a1a1a',
-    border: '1px solid #2a2a2a',
-    borderRadius: '14px',
-    padding: '24px',
-    marginBottom: '16px',
-  } as React.CSSProperties,
+    background: '#fff',
+    border: '1px solid #e5e7eb',
+    borderRadius: '12px',
+    padding: '20px 24px',
+    marginBottom: '14px',
+  },
   cardTitle: {
-    fontSize: '13px',
+    fontSize: '11px',
     fontWeight: 600,
-    color: '#888',
-    textTransform: 'uppercase' as const,
+    color: '#6b7280',
+    textTransform: 'uppercase',
     letterSpacing: '0.06em',
     marginBottom: '16px',
   },
   label: {
-    fontSize: '14px',
-    color: '#ccc',
+    fontSize: '13px',
+    color: '#374151',
     display: 'block',
     marginBottom: '8px',
-  } as React.CSSProperties,
+    fontWeight: 500,
+  },
   input: {
     width: '100%',
-    background: '#111',
-    border: '1px solid #2a2a2a',
+    background: '#f9fafb',
+    border: '1px solid #e5e7eb',
     borderRadius: '8px',
-    color: '#e5e5e5',
-    padding: '10px 12px',
+    color: '#111',
+    padding: '9px 12px',
     fontSize: '14px',
     outline: 'none',
-  } as React.CSSProperties,
+    boxSizing: 'border-box',
+  },
   textarea: {
     width: '100%',
-    background: '#111',
-    border: '1px solid #2a2a2a',
+    background: '#f9fafb',
+    border: '1px solid #e5e7eb',
     borderRadius: '8px',
-    color: '#e5e5e5',
+    color: '#111',
     padding: '10px 12px',
     fontSize: '13px',
-    fontFamily: 'monospace',
-    resize: 'vertical' as const,
+    fontFamily: 'inherit',
+    resize: 'vertical',
     outline: 'none',
-    minHeight: '180px',
-  } as React.CSSProperties,
+    minHeight: '160px',
+    boxSizing: 'border-box',
+  },
   hint: {
     fontSize: '12px',
-    color: '#444',
+    color: '#9ca3af',
     marginTop: '6px',
-  } as React.CSSProperties,
+  },
   toggle: {
     display: 'flex',
     alignItems: 'center',
     gap: '14px',
     cursor: 'pointer',
-  } as React.CSSProperties,
+  },
   checkbox: {
     display: 'flex',
     alignItems: 'center',
@@ -128,11 +111,11 @@ const s = {
     marginBottom: '10px',
     cursor: 'pointer',
     fontSize: '14px',
-    color: '#ccc',
-  } as React.CSSProperties,
+    color: '#374151',
+  },
   saveBtn: {
-    background: '#22c55e',
-    color: '#000',
+    background: '#111',
+    color: '#fff',
     border: 'none',
     borderRadius: '10px',
     padding: '12px 28px',
@@ -140,20 +123,23 @@ const s = {
     fontWeight: 600,
     cursor: 'pointer',
     marginTop: '8px',
-  } as React.CSSProperties,
+  },
   saveBtnDisabled: {
     opacity: 0.5,
     cursor: 'not-allowed',
-  } as React.CSSProperties,
-  message: (type: 'success' | 'error') => ({
+  },
+}
+
+function message(type: 'success' | 'error'): React.CSSProperties {
+  return {
     padding: '12px 16px',
     borderRadius: '10px',
     fontSize: '14px',
-    marginBottom: '16px',
-    background: type === 'success' ? '#052e16' : '#2d0b0b',
-    color: type === 'success' ? '#22c55e' : '#f87171',
-    border: `1px solid ${type === 'success' ? '#166534' : '#7f1d1d'}`,
-  } as React.CSSProperties),
+    marginBottom: '14px',
+    background: type === 'success' ? '#f0fdf4' : '#fef2f2',
+    color: type === 'success' ? '#15803d' : '#dc2626',
+    border: `1px solid ${type === 'success' ? '#bbf7d0' : '#fecaca'}`,
+  }
 }
 
 // ─── Toggle Switch ─────────────────────────────────────────────────────────────
@@ -164,11 +150,11 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       type="button"
       onClick={() => onChange(!checked)}
       style={{
-        width: '52px',
-        height: '28px',
-        borderRadius: '14px',
+        width: '46px',
+        height: '26px',
+        borderRadius: '13px',
         border: 'none',
-        background: checked ? '#22c55e' : '#333',
+        background: checked ? '#22c55e' : '#d1d5db',
         cursor: 'pointer',
         position: 'relative',
         transition: 'background 0.2s',
@@ -178,12 +164,13 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       <span style={{
         position: 'absolute',
         top: '3px',
-        left: checked ? '27px' : '3px',
-        width: '22px',
-        height: '22px',
+        left: checked ? '23px' : '3px',
+        width: '20px',
+        height: '20px',
         borderRadius: '50%',
         background: '#fff',
         transition: 'left 0.2s',
+        boxShadow: '0 1px 3px rgba(0,0,0,.2)',
       }} />
     </button>
   )
@@ -208,9 +195,9 @@ export default function SettingsPanel({ session }: Props) {
         if (error) {
           setMsg({ type: 'error', text: error.message })
         } else {
-          const s = data as Settings
-          setSettings(s)
-          setStopWordsText((s.stop_words ?? []).join('\n'))
+          const d = data as Settings
+          setSettings(d)
+          setStopWordsText((d.stop_words ?? []).join('\n'))
         }
         setLoading(false)
       })
@@ -224,7 +211,7 @@ export default function SettingsPanel({ session }: Props) {
     if (!settings) return
     const next = checked
       ? [...settings.active_sources, key]
-      : settings.active_sources.filter((s) => s !== key)
+      : settings.active_sources.filter((k) => k !== key)
     update('active_sources', next)
   }
 
@@ -265,7 +252,7 @@ export default function SettingsPanel({ session }: Props) {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#555' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 60, color: '#9ca3af' }}>
         Завантаження...
       </div>
     )
@@ -284,27 +271,21 @@ export default function SettingsPanel({ session }: Props) {
 
   return (
     <div style={s.page}>
-      {/* Header */}
-      <div style={s.header}>
-        <div>
-          <div style={s.title}>Freelance Monitor</div>
-          <div style={{ fontSize: '13px', color: '#555', marginTop: '2px' }}>{session.user.email}</div>
-        </div>
-        <button style={s.signOut} onClick={() => supabase.auth.signOut()}>
-          Вийти
-        </button>
+      {/* User email row */}
+      <div style={{ fontSize: 13, color: '#9ca3af', marginBottom: 16 }}>
+        {session.user.email}
       </div>
 
       {/* Missing fields banner */}
       {missingFields.length > 0 && (
         <div style={{
-          background: '#1c1500',
-          border: '1px solid #78350f',
+          background: '#fffbeb',
+          border: '1px solid #fcd34d',
           borderRadius: '12px',
-          padding: '16px 20px',
-          marginBottom: '16px',
+          padding: '14px 18px',
+          marginBottom: '14px',
         }}>
-          <div style={{ fontSize: '13px', fontWeight: 600, color: '#f59e0b', marginBottom: '10px' }}>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: '#b45309', marginBottom: '8px' }}>
             ⚠️ Бот не може запуститись — заповніть обов'язкові поля:
           </div>
           {missingFields.map((f) => (
@@ -313,26 +294,26 @@ export default function SettingsPanel({ session }: Props) {
         </div>
       )}
 
-      {msg && <div style={s.message(msg.type)}>{msg.text}</div>}
+      {msg && <div style={message(msg.type)}>{msg.text}</div>}
 
-      {/* Telegram connection status */}
+      {/* Telegram */}
       <div style={s.card}>
         <div style={s.cardTitle}>Telegram</div>
         {settings.telegram_chat_id ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '20px' }}>✅</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 20 }}>✅</span>
             <div>
-              <div style={{ fontSize: '14px', color: '#22c55e', fontWeight: 600 }}>Підключено</div>
-              <div style={{ fontSize: '12px', color: '#444', marginTop: '2px' }}>chat_id: {settings.telegram_chat_id}</div>
+              <div style={{ fontSize: 14, color: '#15803d', fontWeight: 600 }}>Підключено</div>
+              <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>chat_id: {settings.telegram_chat_id}</div>
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '20px' }}>⚠️</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 20 }}>⚠️</span>
             <div>
-              <div style={{ fontSize: '14px', color: '#f59e0b', fontWeight: 600 }}>Не підключено</div>
-              <div style={{ fontSize: '12px', color: '#444', marginTop: '2px' }}>
-                Напиши <code style={{ color: '#888' }}>/start</code> своєму боту — він автоматично збереже твій chat_id
+              <div style={{ fontSize: 14, color: '#d97706', fontWeight: 600 }}>Не підключено</div>
+              <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
+                Надішли <code style={{ background: '#f3f4f6', padding: '1px 5px', borderRadius: 4 }}>/start</code> своєму боту — він збереже chat_id автоматично
               </div>
             </div>
           </div>
@@ -348,10 +329,10 @@ export default function SettingsPanel({ session }: Props) {
             onChange={(v) => { if (canActivate) update('is_bot_active', v) }}
           />
           <div>
-            <div style={{ fontSize: '15px', color: settings.is_bot_active ? '#22c55e' : '#888', fontWeight: 600 }}>
+            <div style={{ fontSize: 14, color: settings.is_bot_active ? '#15803d' : '#6b7280', fontWeight: 600 }}>
               {settings.is_bot_active ? 'Бот увімкнений' : 'Бот вимкнений'}
             </div>
-            <div style={{ fontSize: '12px', color: '#444', marginTop: '2px' }}>
+            <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
               {canActivate
                 ? 'Якщо вимкнено — пайплайн завершується одразу без зайвих запитів'
                 : 'Заповніть усі обов\'язкові поля щоб увімкнути бота'}
@@ -363,17 +344,19 @@ export default function SettingsPanel({ session }: Props) {
       {/* Active sources */}
       <div style={s.card}>
         <div style={s.cardTitle}>Активні джерела</div>
-        {ALL_SOURCES.map(({ key, label }) => (
-          <label key={key} style={s.checkbox}>
-            <input
-              type="checkbox"
-              checked={settings.active_sources.includes(key)}
-              onChange={(e) => toggleSource(key, e.target.checked)}
-              style={{ width: '16px', height: '16px', accentColor: '#22c55e', cursor: 'pointer' }}
-            />
-            {label}
-          </label>
-        ))}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 16px' }}>
+          {ALL_SOURCES.map(({ key, label }) => (
+            <label key={key} style={s.checkbox}>
+              <input
+                type="checkbox"
+                checked={settings.active_sources.includes(key)}
+                onChange={(e) => toggleSource(key, e.target.checked)}
+                style={{ width: 15, height: 15, accentColor: '#22c55e', cursor: 'pointer', flexShrink: 0 }}
+              />
+              {label}
+            </label>
+          ))}
+        </div>
       </div>
 
       {/* LLM settings */}
@@ -385,7 +368,7 @@ export default function SettingsPanel({ session }: Props) {
           <select
             value={settings.llm_provider ?? ''}
             onChange={(e) => update('llm_provider', e.target.value || null)}
-            style={{ ...s.input, marginTop: '8px', cursor: 'pointer' }}
+            style={{ ...s.input, marginTop: 6, cursor: 'pointer' }}
           >
             <option value="">— оберіть —</option>
             <option value="openai">OpenAI</option>
@@ -393,80 +376,82 @@ export default function SettingsPanel({ session }: Props) {
           </select>
         </label>
 
-        <label style={{ ...s.label, marginTop: '16px' }}>
+        <label style={{ ...s.label, marginTop: 14 }}>
           API Key
           <input
             type="password"
             value={settings.llm_api_key ?? ''}
             onChange={(e) => update('llm_api_key', e.target.value || null)}
             placeholder="sk-..."
-            style={{ ...s.input, marginTop: '8px' }}
+            style={{ ...s.input, marginTop: 6 }}
           />
         </label>
 
-        <label style={{ ...s.label, marginTop: '16px' }}>
+        <label style={{ ...s.label, marginTop: 14 }}>
           Модель
           <input
             type="text"
             value={settings.llm_model ?? ''}
             onChange={(e) => update('llm_model', e.target.value || null)}
             placeholder="gpt-4.1-mini або openai/gpt-4.1-mini"
-            style={{ ...s.input, marginTop: '8px' }}
+            style={{ ...s.input, marginTop: 6 }}
           />
         </label>
         <div style={s.hint}>
-          OpenAI: <code style={{ color: '#666' }}>gpt-4.1-mini</code> &nbsp;·&nbsp;
-          OpenRouter: <code style={{ color: '#666' }}>openai/gpt-4.1-mini</code>
+          OpenAI: <code>gpt-4.1-mini</code> · OpenRouter: <code>openai/gpt-4.1-mini</code>
         </div>
       </div>
 
-      {/* Developer profile for cover letters */}
+      {/* Developer profile */}
       <div style={s.card}>
         <div style={s.cardTitle}>Профіль розробника</div>
-        <label style={s.label}>Використовується для генерації відгуків на вакансії (кнопка ✍️ Написати відгук)</label>
+        <div style={{ ...s.hint, marginBottom: 10 }}>
+          Використовується для генерації відгуків на вакансії (кнопка ✍️ у Telegram)
+        </div>
         <textarea
           value={settings.developer_profile ?? ''}
           onChange={(e) => update('developer_profile', e.target.value || null)}
-          placeholder={`Приклад:\n4+ роки досвіду Full-Stack розробки. Стек: TypeScript, React, Node.js, PostgreSQL.\nПрацюю в FAVBET TECH над high-load маркетинговими платформами (мільярди записей).\nРаніше в SOLUTION MENTORS: створив AI-чатбота (скоротив час відповіді на 97%), прискорив деплой у 3 рази.\nMaster's Degree in Computer Science.`}
-          style={{ ...s.textarea, minHeight: '140px', marginTop: '8px' }}
+          placeholder={`Приклад:\n4+ роки досвіду Full-Stack розробки. Стек: TypeScript, React, Node.js, PostgreSQL.\nПрацюю в FAVBET TECH над high-load маркетинговими платформами.\nРаніше в SOLUTION MENTORS: створив AI-чатбота, скоротив час відповіді на 97%.`}
+          style={s.textarea}
           spellCheck={false}
         />
-        <div style={s.hint}>Чим конкретніше — тим кращий відгук. Вказуй цифри, технології, конкретні результати.</div>
+        <div style={s.hint}>Чим конкретніше — тим кращий відгук. Вказуй цифри, технології, результати.</div>
       </div>
 
-      {/* Min score + Min budget */}
+      {/* Quality filters */}
       <div style={s.card}>
         <div style={s.cardTitle}>Фільтри якості</div>
-        <label style={s.label}>
-          Мінімальний AI-бал (0–100)
-          <input
-            type="number"
-            min={0}
-            max={100}
-            value={settings.min_score}
-            onChange={(e) => update('min_score', parseInt(e.target.value, 10) || 0)}
-            style={{ ...s.input, marginTop: '8px', width: '120px' }}
-          />
-        </label>
-        <div style={s.hint}>Вакансії з балом нижче цього порогу відхиляються AI-скорером</div>
-
-        <label style={{ ...s.label, marginTop: '20px' }}>
-          Мінімальний бюджет ($USD)
-          <input
-            type="number"
-            min={0}
-            value={settings.min_budget_usd}
-            onChange={(e) => update('min_budget_usd', parseInt(e.target.value, 10) || 0)}
-            style={{ ...s.input, marginTop: '8px', width: '120px' }}
-          />
-        </label>
-        <div style={s.hint}>0 = без фільтру. Вакансії з бюджетом нижче цієї суми відхиляються до LLM</div>
+        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+          <label style={s.label}>
+            Мінімальний AI-бал (0–100)
+            <input
+              type="number"
+              min={0}
+              max={100}
+              value={settings.min_score}
+              onChange={(e) => update('min_score', parseInt(e.target.value, 10) || 0)}
+              style={{ ...s.input, marginTop: 6, width: 110 }}
+            />
+            <span style={s.hint}>Вакансії нижче порогу відхиляє AI</span>
+          </label>
+          <label style={s.label}>
+            Мінімальний бюджет ($)
+            <input
+              type="number"
+              min={0}
+              value={settings.min_budget_usd}
+              onChange={(e) => update('min_budget_usd', parseInt(e.target.value, 10) || 0)}
+              style={{ ...s.input, marginTop: 6, width: 110 }}
+            />
+            <span style={s.hint}>0 = без фільтру</span>
+          </label>
+        </div>
       </div>
 
       {/* Stop words */}
       <div style={s.card}>
         <div style={s.cardTitle}>Стоп-слова</div>
-        <label style={s.label}>Одне слово або фраза на рядок</label>
+        <div style={{ ...s.hint, marginBottom: 8 }}>Одне слово або фраза на рядок</div>
         <textarea
           value={stopWordsText}
           onChange={(e) => setStopWordsText(e.target.value)}
@@ -474,7 +459,7 @@ export default function SettingsPanel({ session }: Props) {
           spellCheck={false}
         />
         <div style={s.hint}>
-          Вакансії, що містять будь-яке з цих слів у заголовку або описі, відхиляються на етапі префільтрації
+          Вакансії з цими словами в заголовку/описі відхиляються до LLM
         </div>
       </div>
 
