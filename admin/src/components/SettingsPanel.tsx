@@ -25,8 +25,13 @@ const ALL_SOURCES = [
   { key: 'freelancer-vue',        label: 'Freelancer.com — Vue.js' },
   { key: 'freelancer-nextjs',     label: 'Freelancer.com — Next.js' },
   { key: 'freelancer-nodejs',     label: 'Freelancer.com — Node.js' },
+  { key: 'pph-js',                label: 'PeoplePerHour — JavaScript' },
+  { key: 'pph-react',             label: 'PeoplePerHour — React' },
+  { key: 'guru-react',            label: 'Guru.com — React' },
+  { key: 'guru-nodejs',           label: 'Guru.com — Node.js' },
   { key: 'reddit-forhire',        label: 'Reddit r/forhire' },
   { key: 'reddit-slavelabour',    label: 'Reddit r/slavelabour' },
+  { key: 'hn-hiring',             label: 'Hacker News — Who is Hiring' },
 ]
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
